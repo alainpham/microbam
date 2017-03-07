@@ -1,0 +1,27 @@
+.sla-ko-region {
+  fill: red;
+}
+.sla-ok-region{
+  fill: green;
+}
+
+.c3-xgrid-line.limit-sla-grid line {
+    stroke: black;
+}
+.c3-xgrid-line.limit-sla-grid text {
+    fill: black;
+}
+
+.c3-xgrid-line.actual-ok-sla-grid line {
+    stroke: green;
+}
+.c3-xgrid-line.actual-ok-sla-grid text {
+    fill: green;
+}
+
+.c3-xgrid-line.actual-ko-sla-grid line {
+    stroke: red;
+}
+.c3-xgrid-line.actual-ko-sla-grid text {
+    fill: red;
+}

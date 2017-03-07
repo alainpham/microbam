@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html ng-app="app">
+<head>
+<!-- PatternFly Styles -->
+<!-- Note: No other CSS files are needed regardless of what other JS packages located in patternfly/components that you decide to pull in -->
+<link rel="stylesheet"
+	href="bower_components/patternfly/dist/css/patternfly.min.css">
+<link rel="stylesheet"
+	href="bower_components/patternfly/dist/css/patternfly-additions.min.css">
+<link rel="stylesheet"
+	href="bower_components/angular-patternfly/dist/styles/angular-patternfly.min.css">
+
+<!-- jQuery -->
+<script src="bower_components/jquery/dist/jquery.min.js"></script>
+
+<!-- Bootstrap JS -->
+<script src="bower_components/bootstrap/dist/js/bootstrap.min.js"></script>
+
+<!-- C3, D3 - Charting Libraries -->
+<script src="bower_components/c3/c3.min.js"></script>
+<script src="bower_components/d3/d3.min.js"></script>
+
+<!-- Datatables, jQuery Grid Component -->
+<!-- Note: jquery.dataTables.js must occur in the html source before patternfly*.js.-->
+<script
+	src="bower_components/datatables/media/js/jquery.dataTables.min.js"></script>
+<script src="bower_components/datatables-colvis/js/dataTables.colVis.js"></script>
+<script
+	src="bower_components/datatables-colreorder/js/dataTables.colReorder.js"></script>
+
+<!-- PatternFly Custom Componets -  Sidebar, Popovers and Datatables Customizations -->
+<!-- Note: jquery.dataTables.js must occur in the html source before patternfly*.js.-->
+<script src="bower_components/patternfly/dist/js/patternfly.min.js"></script>
+
+<!-- Bootstrap Combobox -->
+<script
+	src="bower_components/patternfly-bootstrap-combobox/js/bootstrap-combobox.js"></script>
+
+<!-- Bootstrap Date Time Picker - requires Moment -->
+<script src="bower_components/moment/min/moment.min.js"></script>
+
+<!-- Bootstrap Date Picker -->
+<script
+	src="bower_components/bootstrap-datepicker/dist/js/bootstrap-datepicker.min.js"></script>
+
+<!-- Bootstrap Select -->
+<script
+	src="bower_components/bootstrap-select/dist/js/bootstrap-select.min.js"></script>
+
+<!-- Bootstrap Switch -->
+<script
+	src="bower_components/bootstrap-switch/dist/js/bootstrap-switch.min.js"></script>
+
+<!-- Bootstrap Touchspin -->
+<script
+	src="bower_components/bootstrap-touchspin/dist/jquery.bootstrap-touchspin.min.js"></script>
+
+<!-- Bootstrap Tree View -->
+<script
+	src="bower_components/patternfly-bootstrap-treeview/dist/bootstrap-treeview.min.js"></script>
+
+<!-- Google Code Prettify - Syntax highlighting of code snippets -->
+<script src="bower_components/google-code-prettify/bin/prettify.min.js"></script>
+
+<!-- MatchHeight - Used to make sure dashboard cards are the same height -->
+<script src="bower_components/matchHeight/jquery.matchHeight-min.js"></script>
+
+<!-- Angular Application? You May Want to Consider Pulling Angular-PatternFly And Angular-UI Bootstrap instead of bootstrap.js -->
+<!-- See https://github.com/patternfly/angular-patternfly for more information -->
+
+<!-- Angular -->
+<script src="bower_components/angular/angular.min.js"></script>
+<script src="bower_components/angular-route/angular-route.min.js"></script>
+
+<!-- Angular-Bootstrap -->
+<script src="bower_components/angular-bootstrap/ui-bootstrap.min.js"></script>
+<script
+	src="bower_components/angular-bootstrap/ui-bootstrap-tpls.min.js"></script>
+
+<!-- Angular-Sanitize -->
+<script src="bower_components/angular-sanitize/angular-sanitize.min.js"></script>
+
+<!-- Angular-PatternFly  -->
+<script
+	src="bower_components/angular-patternfly/dist/angular-patternfly.min.js"></script>
+
+<!-- Main JS -->
+<link rel="stylesheet" href="css/metricAnalysis.css" >
+
+<script src="js/app.js"></script>
+<script src="js/services/globalVars.js"></script>
+<script src="js/services/serverTime.js"></script>
+<script src="js/services/metrics.js"></script>
+<script src="js/controllers/welcomeController.js"></script>
+<script src="js/controllers/metricsController.js"></script>
+
+<title>Red Hat DEMO</title>
+</head>
+<body class="cards-pf">
+	<div ng-include="'partials/header.html'"></div>
+	<pf-notification-list></pf-notification-list>
+	<div class="container-fluid">
+		<div ng-view></div>
+	</div>
+</body>
+</html>

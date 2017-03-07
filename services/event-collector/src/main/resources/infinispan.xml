@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<infinispan xmlns="urn:infinispan:config:8.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="urn:infinispan:config:8.0 infinispan-config-8.0.xsd ">
+
+	<cache-container name="local" default-cache="default">
+		<local-cache name="default" start="EAGER" />
+		<local-cache name="event">
+			<expiration lifespan="10000" />
+		</local-cache>
+		<local-cache name="metric">
+			<!-- <expiration lifespan="86400000" /> -->
+			<!-- <expiration max-idle="86400000" /> -->
+			<transaction mode="NON_XA" locking="PESSIMISTIC"/>
+		</local-cache>
+	</cache-container>
+	
+
+</infinispan>

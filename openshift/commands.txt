@@ -1,0 +1,20 @@
+sudo iptables -F
+oc cluster up
+
+oc new-project best-project-ever
+oc create -f fis-image-streams.json
+oc create configmap --from-file=app.properties sla-solution-config
+oc create -f sla-solution.yaml
+oc replace -f sla-solution.yaml
+
+oc new-app sla-solution -p SOURCE_REPOSITORY=http://172.17.0.1:8086/r/jboss-middleware-empowered.git
+
+oc delete all -l solution=sla-solution
+
+
+
+
+docker images | grep 172.30.209.201 | awk '{print "docker rmi " $3 }'
+
+
+oc cluster down

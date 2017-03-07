@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Configures the Camel Context -->
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd        http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd">
+	<bean class="org.apache.camel.spring.spi.BridgePropertyPlaceholderConfigurer"
+		id="props">
+		<property name="ignoreResourceNotFound" value="true" />
+		<property name="locations">
+			<list>
+				<value>classpath:app.properties</value>
+				<value>file:app.properties</value>
+				<value>file:${karaf.home}/etc/app.properties</value>
+				<value>file:etc/app.properties</value>
+			</list>
+		</property>
+	</bean>
+	<bean class="com.redhat.microservices.StaticContentLoader" id="staticContentLoader">
+		<property name="rootFolder" value="${contentPath}" />
+	</bean>
+	<bean class="com.redhat.microservices.StreamCloser" id="StreamCloser" />
+	<camelContext id="staticWebServer" xmlns="http://camel.apache.org/schema/spring">
+
+		<route id="simulateBridgeRoute">
+			<from id="simulateBridgeStarter" uri="{{simulateBridge}}" />
+			<to id="callSimulate" uri="{{simulateUri}}" />
+		</route>
+		
+		<route id="backendBridgeRoute">
+			<from id="backendBridgeStarter" uri="{{backendBridge}}" />
+			<to id="callBackend" uri="{{backendUri}}" />
+		</route>
+
+		<route id="appRoute">
+			<from id="appStarter" uri="{{serverUri}}" />
+			<log id="logHTTPHeaders" message="${headers}" />
+			<process id="serveStaticContentProcessor" ref="staticContentLoader" />
+			<onCompletion id="closingProcedure">
+				<process id="closeStreamProcessor" ref="StreamCloser" />
+				<log id="logStreamType" message="${body.class} closed" />
+			</onCompletion>
+		</route>
+	</camelContext>
+</beans>

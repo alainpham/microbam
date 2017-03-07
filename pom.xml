@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- ~ Copyright (C) Red Hat, Inc. ~ http://www.redhat.com ~ ~ Licensed under 
+	the Apache License, Version 2.0 (the "License"); ~ you may not use this file 
+	except in compliance with the License. ~ You may obtain a copy of the License 
+	at ~ ~ http://www.apache.org/licenses/LICENSE-2.0 ~ ~ Unless required by 
+	applicable law or agreed to in writing, software ~ distributed under the 
+	License is distributed on an "AS IS" BASIS, ~ WITHOUT WARRANTIES OR CONDITIONS 
+	OF ANY KIND, either express or implied. ~ See the License for the specific 
+	language governing permissions and ~ limitations under the License. -->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0                       http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<groupId>microbam</groupId>
+	<artifactId>microbam-parent</artifactId>
+	<version>1.0.0-SNAPSHOT</version>
+	<packaging>pom</packaging>
+
+	<properties>
+		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+		<version.maven-bundle-plugin>2.3.7</version.maven-bundle-plugin>
+		<jboss.fuse.bom.version>6.3.0.redhat-224</jboss.fuse.bom.version>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<fabric8.version>2.2.0.redhat-079</fabric8.version>
+		<camel-maven-plugin-version>2.17.0.redhat-630224</camel-maven-plugin-version>
+	</properties>
+
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>org.jboss.fuse.bom</groupId>
+				<artifactId>jboss-fuse-parent</artifactId>
+				<version>${jboss.fuse.bom.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+
+	<dependencies>
+
+	</dependencies>
+	<repositories>
+		<repository>
+			<releases>
+				<enabled>true</enabled>
+				<updatePolicy>never</updatePolicy>
+			</releases>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+			<id>fuse-public-repository</id>
+			<name>FuseSource Community Release Repository</name>
+			<url>https://repo.fusesource.com/nexus/content/groups/public</url>
+		</repository>
+		<repository>
+			<releases>
+				<enabled>true</enabled>
+				<updatePolicy>never</updatePolicy>
+			</releases>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+			<id>red-hat-ga-repository</id>
+			<name>Red Hat GA Repository</name>
+			<url>https://maven.repository.redhat.com/ga</url>
+		</repository>
+	</repositories>
+	<pluginRepositories>
+		<pluginRepository>
+			<releases>
+				<enabled>true</enabled>
+				<updatePolicy>never</updatePolicy>
+			</releases>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+			<id>fuse-public-repository</id>
+			<name>FuseSource Community Release Repository</name>
+			<url>https://repo.fusesource.com/nexus/content/groups/public</url>
+		</pluginRepository>
+		<pluginRepository>
+			<releases>
+				<enabled>true</enabled>
+				<updatePolicy>never</updatePolicy>
+			</releases>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+			<id>red-hat-ga-repository</id>
+			<name>Red Hat GA Repository</name>
+			<url>https://maven.repository.redhat.com/ga</url>
+		</pluginRepository>
+	</pluginRepositories>
+
+	<build>
+		<defaultGoal>install</defaultGoal>
+	<pluginManagement>
+	    <plugins>
+	      <plugin>
+		<groupId>org.apache.camel</groupId>
+		<artifactId>camel-maven-plugin</artifactId>
+		<version>${camel-maven-plugin-version}</version>
+	      </plugin>
+	      <plugin>
+		<groupId>io.fabric8</groupId>
+		<artifactId>hawt-app-maven-plugin</artifactId>
+		<version>${fabric8.version}</version>
+		<executions>
+		  <execution>
+		    <id>hawt-app</id>
+		    <goals>
+		      <goal>build</goal>
+		    </goals>
+		    <configuration>
+		      <javaMainClass>org.apache.camel.spring.Main</javaMainClass>
+		    </configuration>
+		  </execution>
+		</executions>
+	      </plugin>
+	      <plugin>
+		<groupId>org.codehaus.mojo</groupId>
+		<artifactId>exec-maven-plugin</artifactId>
+		<version>1.4.0</version>
+		<configuration>
+		  <mainClass>org.apache.camel.spring.Main</mainClass>
+		</configuration>
+	      </plugin>
+	    </plugins>
+	</pluginManagement>
+		<plugins>
+			<plugin>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.5.1</version>
+				<configuration>
+					<source>1.7</source>
+					<target>1.7</target>
+				</configuration>
+			</plugin>
+			<plugin>
+				<artifactId>maven-resources-plugin</artifactId>
+				<version>3.0.1</version>
+				<configuration>
+					<encoding>UTF-8</encoding>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.felix</groupId>
+				<artifactId>maven-bundle-plugin</artifactId>
+				<version>${version.maven-bundle-plugin}</version>
+				<extensions>true</extensions>
+				<configuration>
+					<instructions>
+						<!-- <DynamicImport-Package> org.h2.* </DynamicImport-Package> <Import-Package>*;resolution:=optional</Import-Package> -->
+						<DynamicImport-Package>*</DynamicImport-Package>
+						<!-- <Embed-Dependency>*;scope=runtime</Embed-Dependency> <_exportcontents>*</_exportcontents> 
+							<Embed-Transitive>true</Embed-Transitive> -->
+					</instructions>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+	<modules>
+		<module>models</module>
+		<module>services</module>
+
+	</modules>
+
+</project>

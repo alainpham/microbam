@@ -1,0 +1,172 @@
+apiVersion: v1
+kind: Template
+metadata:
+  creationTimestamp: null
+  name: sla-solution
+  
+parameters:
+- description: Git Source Repository
+  name: SOURCE_REPOSITORY
+  value: https://github.com/alainpham/jboss-middleware-empowered.git
+  required: true
+- description: Git Source reference
+  name: SOURCE_REF
+  value: master
+  required: true
+- description: FIS image stream namespace
+  name: IMAGE_STREAM_NAMESPACE
+  value: 
+  required: false
+- description: Maven build command
+  name: MAVEN_ARGS
+  value: -DMVN_MIRROR=http://aphamf24:8081/repository/maven-public/ -s settings.xml install -DskipTests -e
+  required: true
+objects:
+- apiVersion: v1 #Build for event-collector
+  kind: BuildConfig
+  metadata:
+    annotations:
+      openshift.io/generated-by: OpenShiftWebConsole
+    creationTimestamp: null
+    labels:
+      app: event-collector
+      solution: sla-solution
+    name: event-collector
+  spec:
+    output:
+      to:
+        kind: ImageStreamTag
+        name: event-collector:latest
+    postCommit: {}
+    resources: {}
+    runPolicy: Serial
+    source:
+      git:
+        ref: ${SOURCE_REF}
+        uri: ${SOURCE_REPOSITORY}
+      type: Git
+    strategy:
+      sourceStrategy:
+        env:
+        - name: MAVEN_ARGS
+          value: ${MAVEN_ARGS}
+        - name: MAVEN_OPTS
+          value: -Xmx1024m
+        - name: MAVEN_ARGS_APPEND
+          value: 
+        - name: ARTIFACT_DIR
+          value: event-collector/target/
+        from:
+          kind: ImageStreamTag
+          name: fis-java-openshift:latest
+          namespace: ${IMAGE_STREAM_NAMESPACE}
+      type: Source
+    triggers:
+    - imageChange: {}
+      type: ImageChange
+    - type: ConfigChange
+  status: {}
+  
+- apiVersion: v1 #deploy for event-collector
+  kind: DeploymentConfig
+  metadata:
+    annotations:
+      openshift.io/generated-by: OpenShiftWebConsole
+    creationTimestamp: null
+    labels:
+      app: event-collector
+      solution: sla-solution
+    name: event-collector
+  spec:
+    replicas: 1
+    selector:
+      deploymentconfig: event-collector
+    strategy:
+      resources: {}
+    template:
+      metadata:
+        creationTimestamp: null
+        labels:
+          app: event-collector
+          solution: sla-solution
+          deploymentconfig: event-collector
+      spec:
+        containers:
+        -  name: event-collector
+           image: event-collector
+           imagePullPolicy: Always  
+           ports:
+           - containerPort: 8778
+             name: jolokia
+             protocol: TCP
+           - containerPort: 7123
+             name: rest-svc
+             protocol: TCP
+           - containerPort: 61616
+             name: amq-svc
+             protocol: TCP
+           resources: {}
+    triggers:
+    - type: ConfigChange
+    - type: ImageChange
+      imageChangeParams:
+        automatic: true
+        containerNames:
+        - "event-collector"
+        from:
+          kind: ImageStreamTag
+          name: event-collector:latest
+  status: {}
+  
+- apiVersion: v1 #ImageStream for event-collector
+  kind: ImageStream
+  metadata:
+    annotations:
+      openshift.io/generated-by: OpenShiftWebConsole
+    creationTimestamp: null
+    labels:
+      app: event-collector
+      solution: sla-solution
+    name: event-collector
+  spec:
+    tags:
+    - annotations: null
+      from:
+        kind: DockerImage
+        name: event-collector:latest
+      generation: null
+      importPolicy: {}
+      name: latest
+  status: {}
+  
+- apiVersion: v1 #Service for event-collector
+  kind: Service
+  metadata:
+    annotations:
+      openshift.io/generated-by: OpenShiftWebConsole
+    creationTimestamp: null
+    labels:
+      app: event-collector
+      solution: sla-solution
+    name: event-collector
+  spec:
+    ports:
+    - name: jolokia-tcp
+      port: 8778
+      protocol: TCP
+      targetPort: 8778
+    - name: rest-svc-tcp
+      port: 7123
+      protocol: TCP
+      targetPort: 7123
+    - name: amq-svc-tcp
+      port: 61616
+      protocol: TCP
+      targetPort: 61616
+    selector:
+      deploymentconfig: event-collector
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+    
