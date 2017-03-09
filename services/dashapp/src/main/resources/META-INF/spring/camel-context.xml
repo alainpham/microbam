@@ -18,19 +18,20 @@
 	<bean class="com.redhat.microservices.StaticContentLoader" id="staticContentLoader">
 		<property name="rootFolder" value="${contentPath}" />
 	</bean>
-	<bean class="com.redhat.microservices.StreamCloser" id="StreamCloser" />
-	<camelContext id="staticWebServer" xmlns="http://camel.apache.org/schema/spring">
 
+	<bean class="com.redhat.microservices.StreamCloser" id="StreamCloser" />
+
+
+
+	<camelContext id="staticWebServer" xmlns="http://camel.apache.org/schema/spring">
 		<route id="simulateBridgeRoute">
 			<from id="simulateBridgeStarter" uri="{{simulateBridge}}" />
 			<to id="callSimulate" uri="{{simulateUri}}" />
 		</route>
-		
 		<route id="backendBridgeRoute">
 			<from id="backendBridgeStarter" uri="{{backendBridge}}" />
 			<to id="callBackend" uri="{{backendUri}}" />
 		</route>
-
 		<route id="appRoute">
 			<from id="appStarter" uri="{{serverUri}}" />
 			<log id="logHTTPHeaders" message="${headers}" />
@@ -40,5 +41,6 @@
 				<log id="logStreamType" message="${body.class} closed" />
 			</onCompletion>
 		</route>
+
 	</camelContext>
 </beans>

@@ -1,110 +1,91 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Configures the Camel Context -->
 <beans xmlns="http://www.springframework.org/schema/beans"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd        http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd">
-	<bean class="org.apache.camel.spring.spi.BridgePropertyPlaceholderConfigurer"
-		id="props">
-		<property name="ignoreResourceNotFound" value="true" />
-		<property name="locations">
-			<list>
-				<value>classpath:app.properties</value>
-				<value>file:app.properties</value>
-				<value>file:${karaf.home}/etc/app.properties</value>
-				<value>file:etc/app.properties</value>
-			</list>
-		</property>
-	</bean>
-
-	<bean id="activemq" class="org.apache.activemq.camel.component.ActiveMQComponent">
-		<property name="brokerURL" value="${brokerUrl}" />
-		<property name="userName" value="${brokerUsr}" />
-		<property name="password" value="${brokerPwd}" />
-	</bean>
-
-	<!-- ########################################################### -->
-	<!-- Database configs -->
-	<!-- ########################################################### -->
-	<bean class="org.apache.commons.dbcp.BasicDataSource"
-		destroy-method="close" id="dataSource">
-		<property name="driverClassName" value="${dbDriver}" />
-		<property name="url" value="${dbUrl}" />
-		<property name="username" value="${dbUser}" />
-		<property name="password" value="${dbPwd}" />
-	</bean>
-	<bean class="org.apache.camel.component.sql.SqlComponent" id="sql">
-		<property name="dataSource" ref="dataSource" />
-	</bean>
-
-	<bean id="dataGenerator" class="com.redhat.empowered.tester.DataGenerator"
-		scope="singleton"></bean>
-
-	<bean id="genericObjectFactory" class="com.redhat.empowered.generic.model.GenericObjectFactory" />
-
-
-	<camelContext id="trade-service" xmlns="http://camel.apache.org/schema/spring">
-
-		<restConfiguration component="netty4-http" port="7124"
-			bindingMode="json" enableCORS="true" />
-		<rest id="svc" path="/sim">
-			<get uri="{avg}/{stdev}" id="simOp">
-				<to uri="direct:simOp" />
-			</get>
-			<get uri="stop" id="stopOp">
-				<to uri="direct:stopOp" />
-			</get>
-		</rest>
-
-		<route id="simOpRoute">
-			<from id="simeOpStarter" uri="direct:simOp" />
-			<bean ref="dataGenerator" method="startSim(${header.avg},${header.stdev})"></bean>
-			<setBody>
-				<simple>started</simple>
-			</setBody>
-		</route>
-
-		<route id="stopOpRoute">
-			<from id="stopOpStarter" uri="direct:stopOp" />
-			<bean ref="dataGenerator" method="terminate()"></bean>
-			<setBody>
-				<simple>stopped</simple>
-			</setBody>
-		</route>
-
-		<route id="receiveMetricsAMQJson">
-			<from id="receiveMetricsAMQJsonStarter" uri="activemq:queue:app.stats.trades" />
-			<log id="logBodyContent" message="metadata verifed ${body}" />
-			<unmarshal id="parseJson">
-				<json id="tradeProcessingDurationJson" library="Jackson"
-					unmarshalTypeName="com.redhat.empowered.specific.model.trading.TradeProcessingDuration" />
-			</unmarshal>
-			<to id="call" uri="direct:receiveMetricsGeneric" />
-		</route>
-		<route id="receiveMetricsGeneric">
-			<from id="receiveMetricsGenericStarter" uri="direct:receiveMetricsGeneric" />
-			<setProperty propertyName="originalBean">
-				<simple>${body}</simple>
-			</setProperty>
-			<to id="toStoreIndicator" uri="direct:storeIndicator" />
-			<setBody>
-				<method ref="genericObjectFactory" method="createIndicatorRecord(${property.originalBean})"></method>
-			</setBody>
-			<marshal>
-				<serialization />
-			</marshal>
-			<to id="toUpdateStat" uri="activemq:queue:app.stats.updatestats" />
-		</route>
-
-		<!-- store the raw POJO -->
-		<route id="storeIndicatorRoute">
-			<from id="storeIndicatorStarter" uri="direct:storeIndicator" />
-			<setHeader headerName="eventTimestmp">
-				<simple>${body.timestmp}</simple>
-			</setHeader>
-			<log id="logBody" message="trying to store pojo of type ${body.class}" />
-<!-- 			<to uri="sql:classpath:sql/insertIndicatorRecord.sql" />
- -->		</route>
-
-
-	</camelContext>
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd        http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd">
+    <bean
+        class="org.apache.camel.spring.spi.BridgePropertyPlaceholderConfigurer" id="props">
+        <property name="ignoreResourceNotFound" value="true"/>
+        <property name="locations">
+            <list>
+                <value>classpath:app.properties</value>
+                <value>file:app.properties</value>
+                <value>file:${karaf.home}/etc/app.properties</value>
+                <value>file:etc/app.properties</value>
+            </list>
+        </property>
+    </bean>
+    <bean class="org.apache.activemq.camel.component.ActiveMQComponent" id="activemq">
+        <property name="brokerURL" value="${brokerUrl}"/>
+        <property name="userName" value="${brokerUsr}"/>
+        <property name="password" value="${brokerPwd}"/>
+    </bean>
+    <!-- ########################################################### -->
+    <!-- Database configs -->
+    <!-- ########################################################### -->
+    <bean class="org.apache.commons.dbcp.BasicDataSource"
+        destroy-method="close" id="dataSource">
+        <property name="driverClassName" value="${dbDriver}"/>
+        <property name="url" value="${dbUrl}"/>
+        <property name="username" value="${dbUser}"/>
+        <property name="password" value="${dbPwd}"/>
+    </bean>
+    <bean class="org.apache.camel.component.sql.SqlComponent" id="sql">
+        <property name="dataSource" ref="dataSource"/>
+    </bean>
+    <bean class="com.redhat.empowered.tester.DataGenerator"
+        id="dataGenerator" scope="singleton"/>
+    <bean
+        class="com.redhat.empowered.generic.model.GenericObjectFactory" id="genericObjectFactory"/>
+    <camelContext id="trade-service" xmlns="http://camel.apache.org/schema/spring">
+        <restConfiguration bindingMode="json" component="netty4-http"
+            enableCORS="true" port="7124"/>
+        <rest id="svc" path="/sim">
+            <get id="simOp" uri="{avg}/{stdev}">
+                <to uri="direct:simOp"/>
+            </get>
+            <get id="stopOp" uri="stop">
+                <to uri="direct:stopOp"/>
+            </get>
+        </rest>
+        <route id="simOpRoute">
+            <from id="simeOpStarter" uri="direct:simOp"/>
+            <bean id="_bean1"
+                method="startSim(${header.avg},${header.stdev})" ref="dataGenerator"/>
+            <setBody id="_setBody1">
+                <simple>started</simple>
+            </setBody>
+        </route>
+        <route id="stopOpRoute">
+            <from id="stopOpStarter" uri="direct:stopOp"/>
+            <bean id="_bean2" method="terminate()" ref="dataGenerator"/>
+            <setBody id="_setBody2">
+                <simple>stopped</simple>
+            </setBody>
+        </route>
+        <!-- Specific process that parses and validates business data -->
+        <route id="receiveMetricsAMQJson">
+            <from id="receiveMetricsAMQJsonStarter" uri="activemq:queue:app.stats.trades"/>
+            <log id="logBodyContent" message="metadata verifed ${body}"/>
+            <unmarshal id="parseJson">
+                <json id="tradeProcessingDurationJson" library="Jackson" unmarshalTypeName="com.redhat.empowered.specific.model.trading.TradeProcessingDuration"/>
+            </unmarshal>
+            <to id="call" uri="direct:receiveMetricsGeneric"/>
+        </route>
+        <route id="receiveMetricsGeneric">
+            <from id="receiveMetricsGenericStarter" uri="direct:receiveMetricsGeneric"/>
+            <setProperty id="_setProperty1" propertyName="originalBean">
+                <simple>${body}</simple>
+            </setProperty>
+            <setBody id="_setBody3">
+                <method
+                    method="createIndicatorRecord(${property.originalBean})" ref="genericObjectFactory"/>
+            </setBody>
+            <marshal id="_marshal1">
+                <serialization/>
+            </marshal>
+            <to id="toStoreIndicator" uri="activemq:queue:app.stats.indicators"/>
+            <to id="toUpdateStat" uri="activemq:queue:app.stats.updatestats"/>
+        </route>
+       
+    </camelContext>
 </beans>

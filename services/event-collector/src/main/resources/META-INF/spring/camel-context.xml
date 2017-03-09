@@ -2,11 +2,11 @@
 <!-- Configures the Camel Context -->
 <beans xmlns="http://www.springframework.org/schema/beans"
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="     
-       http://www.springframework.org/schema/beans 
-       http://www.springframework.org/schema/beans/spring-beans.xsd      
-         http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd 
-          http://activemq.apache.org/schema/core http://activemq.apache.org/schema/core/activemq-core.xsd ">
+	xsi:schemaLocation="             http://www.springframework.org/schema/beans         http://www.springframework.org/schema/beans/spring-beans.xsd                http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd            http://activemq.apache.org/schema/core http://activemq.apache.org/schema/core/activemq-core.xsd ">
+
+	<!-- ########################################################### -->
+	<!-- Properties -->
+	<!-- ########################################################### -->
 	<bean class="org.apache.camel.spring.spi.BridgePropertyPlaceholderConfigurer"
 		id="props">
 		<property name="ignoreResourceNotFound" value="true" />
@@ -20,44 +20,54 @@
 		</property>
 	</bean>
 
-	<bean class="org.apache.activemq.broker.BrokerService" destroy-method="stop" init-method="start">
+	<!-- ########################################################### -->
+	<!-- Embedded A-MQ instance -->
+	<!-- ########################################################### -->
+	<bean class="org.apache.activemq.broker.BrokerService"
+		destroy-method="stop" id="broker-svc" init-method="start">
 		<property name="transportConnectorURIs">
 			<list>
 				<value>tcp://0.0.0.0:61670</value>
 			</list>
 		</property>
-		<property name="persistent" value="false"></property>
+		<property name="persistent" value="false" />
 		<property name="useJmx" value="true" />
 		<property name="brokerId" value="eventbrk" />
 		<property name="brokerName" value="eventbrk" />
 	</bean>
 
-	<!-- <amq:broker persistent="false" useJmx="true" xmlns:amq="http://activemq.apache.org/schema/core"> 
-		<amq:transportConnectors> <amq:transportConnector uri="tcp://0.0.0.0:61670"/> 
-		</amq:transportConnectors> </amq:broker> -->
-	<!-- Internal InfiniSpan cache -->
 	<bean class="org.infinispan.manager.DefaultCacheManager"
 		destroy-method="stop" id="cacheManager" init-method="start">
 		<constructor-arg type="java.lang.String" value="infinispan.xml" />
 	</bean>
-	<!-- Embedded data base -->
+
+	<!-- ########################################################### -->
+	<!-- Embedded Database -->
+	<!-- ########################################################### -->
 	<bean class="org.h2.tools.Server" destroy-method="stop"
 		factory-method="createTcpServer" id="h2db" init-method="start">
 		<constructor-arg
 			value="-tcp,-tcpAllowOthers,-tcpPort,8643,-baseDir,./h2dbstore" />
 	</bean>
-	<bean class="org.h2.tools.Server" destroy-method="stop" depends-on="h2db"
-		factory-method="createWebServer" id="h2Server" init-method="start"
-		lazy-init="false">
+
+	<bean class="org.h2.tools.Server" depends-on="h2db"
+		destroy-method="stop" factory-method="createWebServer" id="h2Server"
+		init-method="start" lazy-init="false">
 		<constructor-arg
 			value="-web,-webAllowOthers,-webPort,11111,-baseDir,./h2dbstore" />
 	</bean>
+
+	<!-- ########################################################### -->
+	<!-- A-MQ Connection -->
+	<!-- ########################################################### -->
 	<bean class="org.apache.activemq.camel.component.ActiveMQComponent"
 		id="activemq">
 		<property name="brokerURL" value="${brokerUrl}" />
 		<property name="userName" value="${brokerUsr}" />
 		<property name="password" value="${brokerPwd}" />
 	</bean>
+
+
 	<!-- ########################################################### -->
 	<!-- Database configs -->
 	<!-- ########################################################### -->
@@ -71,6 +81,11 @@
 	<bean class="org.apache.camel.component.sql.SqlComponent" id="sql">
 		<property name="dataSource" ref="dataSource" />
 	</bean>
+
+
+	<!-- ########################################################### -->
+	<!-- Beans -->
+	<!-- ########################################################### -->
 	<bean class="com.redhat.empowered.generic.model.GenericObjectFactory"
 		id="genericObjectFactory" />
 	<bean
@@ -80,6 +95,7 @@
 		<constructor-arg value="metric" />
 		<constructor-arg ref="genericObjectFactory" />
 	</bean>
+
 	<camelContext id="event-collector" xmlns="http://camel.apache.org/schema/spring">
 		<endpoint id="datagrid" uri="infinispan://{{dgUrl}}" />
 		<restConfiguration bindingMode="json" component="netty4-http"
@@ -96,13 +112,14 @@
 			</get>
 		</rest>
 		<route id="serverTime">
-			<from id="_from1" uri="direct:serverTimeOp" />
-			<setBody id="_setBody1">
+			<from id="serverTimeStarter" uri="direct:serverTimeOp" />
+			<setBody id="setTimeToBody">
 				<simple>${date:now:yyyyMMddHHmmss.SSS}</simple>
 			</setBody>
 		</route>
+
 		<route id="clearCacheRoute">
-			<from id="_from2" uri="direct:clearCacheOp" />
+			<from id="clearCacheStarter" uri="direct:clearCacheOp" />
 			<setHeader headerName="CamelInfinispanCacheName" id="_setHeader1">
 				<simple>${headers.cacheName}</simple>
 			</setHeader>
@@ -156,11 +173,26 @@
 			</setHeader>
 			<process id="_process3" ref="triggerMetricCalculation" />
 		</route>
+
+		<!-- store the raw POJO -->
+		<route id="storeIndicatorRoute">
+			<from id="storeIndicatorStarter"
+				uri="activemq:queue:app.stats.indicators?acknowledgementModeName=CLIENT_ACKNOWLEDGE" />
+			<unmarshal>
+				<serialization />
+			</unmarshal>
+			<setHeader headerName="eventTimestmp">
+				<simple>${body.timestmp}</simple>
+			</setHeader>
+			<log id="logBody" message="trying to store pojo of type ${body.class}" />
+			<to uri="sql:classpath:sql/insertIndicatorRecord.sql" />
+		</route>
+
 		<!-- Init Database -->
-<!-- 		<route id="initDBRoute" startupOrder="1">
+		<route id="initDBRoute" startupOrder="1">
 			<from id="initDBStarter" uri="timer:initDB?repeatCount=1&amp;delay=-1" />
 			<to id="_to3" uri="sql:classpath:sql/createIndicatorRecord.sql" />
 			<log id="_log2" message="DB initialized!" />
-		</route> -->
+		</route>
 	</camelContext>
 </beans>
