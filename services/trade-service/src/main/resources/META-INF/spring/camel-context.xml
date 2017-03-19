@@ -86,6 +86,5 @@
             <to id="toStoreIndicator" uri="activemq:queue:app.stats.indicators"/>
             <to id="toUpdateStat" uri="activemq:queue:app.stats.updatestats"/>
         </route>
-       
     </camelContext>
 </beans>
