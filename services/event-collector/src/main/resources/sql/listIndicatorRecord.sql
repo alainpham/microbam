@@ -1,0 +1,12 @@
+select 
+	uid,
+	indicatorValue,
+	timestmp,
+	timestmpyyyy,
+	timestmpyyyyMM,
+	timestmpyyyyMMdd,
+	timestmpyyyyMMddHH,
+	frequencyGroupValue,
+	indicatorClass
+from 
+	IndicatorRecord;

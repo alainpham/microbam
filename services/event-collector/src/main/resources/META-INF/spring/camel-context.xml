@@ -3,7 +3,6 @@
 <beans xmlns="http://www.springframework.org/schema/beans"
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="             http://www.springframework.org/schema/beans         http://www.springframework.org/schema/beans/spring-beans.xsd                http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd            http://activemq.apache.org/schema/core http://activemq.apache.org/schema/core/activemq-core.xsd ">
-
 	<!-- ########################################################### -->
 	<!-- Properties -->
 	<!-- ########################################################### -->
@@ -19,7 +18,6 @@
 			</list>
 		</property>
 	</bean>
-
 	<!-- ########################################################### -->
 	<!-- Embedded A-MQ instance -->
 	<!-- ########################################################### -->
@@ -35,12 +33,10 @@
 		<property name="brokerId" value="eventbrk" />
 		<property name="brokerName" value="eventbrk" />
 	</bean>
-
 	<bean class="org.infinispan.manager.DefaultCacheManager"
 		destroy-method="stop" id="cacheManager" init-method="start">
-		<constructor-arg type="java.lang.String" value="infinispan.xml" />
+		<constructor-arg type="java.lang.String" value="infinispan/infinispan.xml" />
 	</bean>
-
 	<!-- ########################################################### -->
 	<!-- Embedded Database -->
 	<!-- ########################################################### -->
@@ -49,14 +45,12 @@
 		<constructor-arg
 			value="-tcp,-tcpAllowOthers,-tcpPort,8643,-baseDir,./h2dbstore" />
 	</bean>
-
 	<bean class="org.h2.tools.Server" depends-on="h2db"
 		destroy-method="stop" factory-method="createWebServer" id="h2Server"
 		init-method="start" lazy-init="false">
 		<constructor-arg
 			value="-web,-webAllowOthers,-webPort,11111,-baseDir,./h2dbstore" />
 	</bean>
-
 	<!-- ########################################################### -->
 	<!-- A-MQ Connection -->
 	<!-- ########################################################### -->
@@ -66,8 +60,6 @@
 		<property name="userName" value="${brokerUsr}" />
 		<property name="password" value="${brokerPwd}" />
 	</bean>
-
-
 	<!-- ########################################################### -->
 	<!-- Database configs -->
 	<!-- ########################################################### -->
@@ -81,8 +73,6 @@
 	<bean class="org.apache.camel.component.sql.SqlComponent" id="sql">
 		<property name="dataSource" ref="dataSource" />
 	</bean>
-
-
 	<!-- ########################################################### -->
 	<!-- Beans -->
 	<!-- ########################################################### -->
@@ -95,7 +85,11 @@
 		<constructor-arg value="metric" />
 		<constructor-arg ref="genericObjectFactory" />
 	</bean>
-
+	<bean class="com.redhat.empowered.generic.dg.QueryIndicatorRecords"
+		id="queryIndicatorRecord">
+		<constructor-arg ref="cacheManager" />
+		<constructor-arg value="event" />
+	</bean>
 	<camelContext id="event-collector" xmlns="http://camel.apache.org/schema/spring">
 		<endpoint id="datagrid" uri="infinispan://{{dgUrl}}" />
 		<restConfiguration bindingMode="json" component="netty4-http"
@@ -111,40 +105,52 @@
 				<to uri="direct:queryOp" />
 			</get>
 		</rest>
+		<rest id="dbSvc" path="/indicatorrecords/{indicatorClass}">
+			<get id="indicatorRecordList" uri="/">
+				<to uri="direct:indicatorRecordList" />
+			</get>
+		</rest>
+		<route id="indicatorRecordListRoute">
+			<from id="indicatorRecordListStarter" uri="direct:indicatorRecordList" />
+			<setBody>
+				<method bean="queryIndicatorRecord" method="listIndicatorRecords(${header.indicatorClass})"></method>
+			</setBody>
+		</route>
 		<route id="serverTime">
 			<from id="serverTimeStarter" uri="direct:serverTimeOp" />
 			<setBody id="setTimeToBody">
 				<simple>${date:now:yyyyMMddHHmmss.SSS}</simple>
 			</setBody>
 		</route>
-
 		<route id="clearCacheRoute">
 			<from id="clearCacheStarter" uri="direct:clearCacheOp" />
-			<setHeader headerName="CamelInfinispanCacheName" id="_setHeader1">
+			<setHeader headerName="CamelInfinispanCacheName"
+				id="clearCacheSetCamelInfinispanCacheName">
 				<simple>${headers.cacheName}</simple>
 			</setHeader>
-			<setHeader headerName="CamelInfinispanOperation" id="_setHeader2">
+			<setHeader headerName="CamelInfinispanOperation"
+				id="clearCacheSetCamelInfinispanOperation">
 				<constant>CamelInfinispanOperationClear</constant>
 			</setHeader>
-			<to id="_to1" ref="datagrid" />
-			<setBody id="_setBody2">
+			<to id="clearCacheRouteToDataGrid" uri="ref:datagrid" />
+			<setBody id="clearCacheRouteSetResponse">
 				<simple>${headers.cacheName} cleared!</simple>
 			</setBody>
 		</route>
 		<!-- rest service to query events -->
 		<route id="queryOpRoute">
 			<from id="queryOpStarter" uri="direct:queryOp" />
-			<setHeader headerName="CamelInfinispanKey" id="_setHeader3">
+			<setHeader headerName="CamelInfinispanKey" id="queryOpRouteSetKey">
 				<simple>${headers.uid}</simple>
 			</setHeader>
-			<setHeader headerName="CamelInfinispanCacheName" id="_setHeader4">
+			<setHeader headerName="CamelInfinispanCacheName" id="queryOpRouteSetCacheName">
 				<simple>${headers.cacheName}</simple>
 			</setHeader>
-			<setHeader headerName="CamelInfinispanOperation" id="_setHeader5">
+			<setHeader headerName="CamelInfinispanOperation" id="queryOpRouteSetOperation">
 				<constant>CamelInfinispanOperationGet</constant>
 			</setHeader>
-			<to id="_to2" ref="datagrid" />
-			<setBody id="_setBody3">
+			<to id="queryOpRouteToDataGrid" uri="ref:datagrid" />
+			<setBody id="queryOpRouteSetResponse">
 				<simple>${header.CamelInfinispanOperationResult}</simple>
 			</setBody>
 		</route>
@@ -152,47 +158,58 @@
 		<route id="calculateMetrics">
 			<from id="calculateMetricsStarter"
 				uri="activemq:queue:app.stats.updatestats?acknowledgementModeName=CLIENT_ACKNOWLEDGE" />
-			<unmarshal id="_unmarshal1">
+			<unmarshal id="umForMetricsCalc">
 				<serialization />
 			</unmarshal>
-			<log id="_log1"
+			<log id="calculateMetricsLogObjectClass"
 				message="trying to process pojo of type ${body.class} - ${body.indicatorValue}" />
-			<setHeader headerName="eventTimestmp" id="_setHeader6">
+			<setHeader headerName="eventTimestmp" id="setEventTimestamp">
 				<simple>${body.timestmp}</simple>
 			</setHeader>
-			<setHeader headerName="key" id="_setHeader7">
+			<setHeader headerName="key" id="setMetricsKeyHourly">
 				<simple>${body.indicatorClass}.hourly.${date:header.eventTimestmp:yyyyMMddHH}</simple>
 			</setHeader>
-			<process id="_process1" ref="triggerMetricCalculation" />
-			<setHeader headerName="key" id="_setHeader8">
+			<process id="processTriggerMetricCalculationHourly" ref="triggerMetricCalculation" />
+			<setHeader headerName="key" id="setMetricsKeyDaily">
 				<simple>${body.indicatorClass}.daily.${date:header.eventTimestmp:yyyyMMdd}</simple>
 			</setHeader>
-			<process id="_process2" ref="triggerMetricCalculation" />
-			<setHeader headerName="key" id="_setHeader9">
+			<process id="processTriggerMetricCalculationDaily" ref="triggerMetricCalculation" />
+			<setHeader headerName="key" id="setMetricsKeyMonthly">
 				<simple>${body.indicatorClass}.monthly.${date:header.eventTimestmp:yyyyMM}</simple>
 			</setHeader>
-			<process id="_process3" ref="triggerMetricCalculation" />
+			<process id="processTriggerMetricCalculationMonthly" ref="triggerMetricCalculation" />
 		</route>
-
 		<!-- store the raw POJO -->
 		<route id="storeIndicatorRoute">
 			<from id="storeIndicatorStarter"
 				uri="activemq:queue:app.stats.indicators?acknowledgementModeName=CLIENT_ACKNOWLEDGE" />
-			<unmarshal>
+			<unmarshal id="umForStoreIndicatorRoute">
 				<serialization />
 			</unmarshal>
-			<setHeader headerName="eventTimestmp">
+			<setHeader headerName="eventTimestmp"
+				id="setEventTimestampForStoreIndicatorRoute">
 				<simple>${body.timestmp}</simple>
 			</setHeader>
-			<log id="logBody" message="trying to store pojo of type ${body.class}" />
-			<to uri="sql:classpath:sql/insertIndicatorRecord.sql" />
+			<log id="logBody" message="trying to store pojo of type ${body.class} ${body.uid}" />
+			<setHeader headerName="CamelInfinispanKey" id="_setHeader1">
+				<simple>${body.uid}</simple>
+			</setHeader>
+			<setHeader headerName="CamelInfinispanCacheName" id="_setHeader2">
+				<constant>event</constant>
+			</setHeader>
+			<setHeader headerName="CamelInfinispanOperation" id="_setHeader3">
+				<constant>CamelInfinispanOperationPut</constant>
+			</setHeader>
+			<setHeader headerName="CamelInfinispanValue" id="_setHeader4">
+				<simple>${body}</simple>
+			</setHeader>
+			<to id="_to1" uri="ref:datagrid" />
 		</route>
-
 		<!-- Init Database -->
 		<route id="initDBRoute" startupOrder="1">
 			<from id="initDBStarter" uri="timer:initDB?repeatCount=1&amp;delay=-1" />
-			<to id="_to3" uri="sql:classpath:sql/createIndicatorRecord.sql" />
-			<log id="_log2" message="DB initialized!" />
+			<to id="populateIndicatorRecordTable" uri="sql:classpath:sql/createIndicatorRecord.sql" />
+			<log id="logDatabseInitialization" message="DB initialized!" />
 		</route>
 	</camelContext>
 </beans>

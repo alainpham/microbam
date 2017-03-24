@@ -8,6 +8,7 @@ import org.apache.camel.EndpointInject;
 import org.apache.camel.ProducerTemplate;
 import org.apache.commons.math3.random.RandomDataGenerator;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.redhat.empowered.specific.model.trading.TradeProcessingDuration;
 
@@ -106,6 +107,17 @@ public class DataGenerator extends Thread{
 					e.printStackTrace();
 	            }
 	        }
+	}
+	
+	public String generateOne() throws JsonProcessingException{
+		ObjectMapper mapper = new ObjectMapper();
+
+		BigDecimal value = new BigDecimal(10); 
+    	TradeProcessingDuration tradeProcessingDuration = new TradeProcessingDuration();
+    	tradeProcessingDuration.setUid("" + System.currentTimeMillis());
+    	tradeProcessingDuration.setTimestmp(new Date());
+    	tradeProcessingDuration.setIndicatorValue(value);
+    	return mapper.writeValueAsString(tradeProcessingDuration);
 	}
 
 }

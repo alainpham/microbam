@@ -4,13 +4,27 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.Date;
 
+import org.hibernate.search.annotations.Analyze;
+import org.hibernate.search.annotations.DateBridge;
+import org.hibernate.search.annotations.Field;
+import org.hibernate.search.annotations.Indexed;
+import org.hibernate.search.annotations.Resolution;
+
+@Indexed
 public class IndicatorRecord implements Serializable{
 
 	private static final long serialVersionUID = 1L;
 	protected String uid;
 	protected BigDecimal indicatorValue;
+	
+	@Field 
+	@DateBridge(resolution=Resolution.MINUTE) 
 	protected Date timestmp;
+	
+	@Field
 	protected BigDecimal frequencyGroupValue;
+	
+	@Field(analyze=Analyze.NO)
 	protected String indicatorClass;
 	
 	public String getUid() {
