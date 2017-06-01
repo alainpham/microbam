@@ -14,7 +14,6 @@ import com.redhat.empowered.generic.model.StatisticsRecord;
 
 public class TriggerMetricCalculation implements Processor {
 
-
 	private CacheContainer cacheContainer ;
 	private TransactionManager transactionManager;
 	private GenericObjectFactory genericObjectFactory;

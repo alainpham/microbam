@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<infinispan xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="urn:infinispan:config:8.0
+http://www.infinispan.org/schemas/infinispan-config-8.0.xsd
+urn:infinispan:config:store:leveldb:8.0
+http://www.infinispan.org/schemas/infinispan-cachestore-leveldb-config-8.0.xsd
+"
+	xmlns="urn:infinispan:config:8.0">
+	<cache-container default-cache="metric">
+		<local-cache name="metric">
+			<transaction locking="PESSIMISTIC" mode="NON_XA" />
+			<eviction strategy="LRU" type="COUNT" size="200" />
+		</local-cache>
+		<local-cache name="endpoint">
+			<persistence>
+				<leveldb-store xmlns="urn:infinispan:config:store:leveldb:8.0" 
+					relative-to="endpoint-ldb" shared="false" preload="true" />
+			</persistence>
+		</local-cache>
+	</cache-container>
+
+</infinispan>

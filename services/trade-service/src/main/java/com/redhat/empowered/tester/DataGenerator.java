@@ -95,8 +95,8 @@ public class DataGenerator extends Thread{
 
 	       while (this.running) {
 	            try {
-	            	BigDecimal value = new BigDecimal(dataGenerator.nextGaussian(avg.doubleValue(), stdev.doubleValue()),MathContext.DECIMAL64);
-	            	value = value.abs();
+	            	Double value = new Double(dataGenerator.nextGaussian(avg.doubleValue(), stdev.doubleValue()));
+	            	value = Math.abs(value);
 	            	TradeProcessingDuration tradeProcessingDuration = new TradeProcessingDuration();
 	            	tradeProcessingDuration.setUid("" + System.currentTimeMillis());
 	            	tradeProcessingDuration.setTimestmp(new Date());
@@ -112,7 +112,7 @@ public class DataGenerator extends Thread{
 	public String generateOne() throws JsonProcessingException{
 		ObjectMapper mapper = new ObjectMapper();
 
-		BigDecimal value = new BigDecimal(10); 
+		Double value = 10D; 
     	TradeProcessingDuration tradeProcessingDuration = new TradeProcessingDuration();
     	tradeProcessingDuration.setUid("" + System.currentTimeMillis());
     	tradeProcessingDuration.setTimestmp(new Date());

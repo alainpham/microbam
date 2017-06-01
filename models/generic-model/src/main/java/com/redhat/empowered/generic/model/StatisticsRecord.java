@@ -2,10 +2,8 @@ package com.redhat.empowered.generic.model;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
-import java.math.MathContext;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -16,40 +14,46 @@ import org.apache.commons.math3.distribution.NormalDistribution;
 public class StatisticsRecord implements Serializable{
 
 	/**
-	 * 
+	 *
 	 */
 	private static final long serialVersionUID = 1L;
-	
+
 	private String key;
 	private Integer count=0;
-	private BigDecimal avg;
-	private BigDecimal stdev;
-	private Map<BigDecimal,Integer> frequencyData = new TreeMap<BigDecimal,Integer>();
-	private BigDecimal min;
-	private BigDecimal max;
-	
-	private BigDecimal expectedPercentile = new BigDecimal(95);
-	private BigDecimal expectedSlaValue = new BigDecimal(30);
-	
-	private BigDecimal actualPercentile;
-	private BigDecimal actualSlaValue;
 
-	public List<Map<String,BigDecimal>> getfrequencyDataAsList(){
-		
-		List<Map<String,BigDecimal>> frequencyList = new ArrayList<Map<String,BigDecimal>>();
-		
-		
-		for (Entry<BigDecimal, Integer> entry : frequencyData.entrySet()) {
-			Map<String,BigDecimal> m = new HashMap<String,BigDecimal>();
+	private Double avg;
+	private Double stdev;
+	private TreeMap<Integer,Integer> frequencyData = new TreeMap<Integer,Integer>();
+	private Double min;
+	private Double max;
+
+	private Double expectedPercentile = new Double(95);
+	private Double expectedSlaValue = new Double(30);
+
+	private Double actualPercentile;
+	private Double actualSlaValue;
+
+	//Sums	to calculate online variance and mean
+	private Double totalSum;
+	private Double mn; //Mk = Mk-1+ (xk – Mk-1)/k
+	private Double sn; //Sk-1 + (xk – Mk-1)*(xk – Mk) -> variance s2 = Sk/(k – 1)
+
+	public List<Map<String,Integer>> getfrequencyDataAsList(){
+
+		List<Map<String,Integer>> frequencyList = new ArrayList<Map<String,Integer>>();
+
+
+		for (Entry<Integer, Integer> entry : frequencyData.entrySet()) {
+			Map<String,Integer> m = new HashMap<String,Integer>();
 			m.put("x",entry.getKey());
-			m.put("y",new BigDecimal(entry.getValue()));
+			m.put("y",entry.getValue());
 			frequencyList.add(m);
 		}
-		
+
 		return frequencyList;
-		
+
 	}
-	
+
 	public List<List<Serializable>> getFrequencyAsArray(){
 		//function formatted for c3.js
 		List<List<Serializable>> frequencyList = new ArrayList<List<Serializable>>();
@@ -59,159 +63,158 @@ public class StatisticsRecord implements Serializable{
 		frequencyList.add(yVals);
 		xVals.add("x");
 		yVals.add("y");
-		
-		for (Entry<BigDecimal, Integer> entry : frequencyData.entrySet()) {
+
+		for (Entry<Integer, Integer> entry : frequencyData.entrySet()) {
 			Map<String,BigDecimal> m = new HashMap<String,BigDecimal>();
 			xVals.add(entry.getKey());
 			yVals.add(new BigDecimal(entry.getValue()));
 		}
-		
-		
+
 		return frequencyList;
 
 	}
-	
-	
-	public BigDecimal getExpectedPercentile() {
+
+	public Double getExpectedPercentile() {
 		return expectedPercentile;
 	}
 
-	public void setExpectedPercentile(BigDecimal expectedPercentile) {
+	public void setExpectedPercentile(Double expectedPercentile) {
 		this.expectedPercentile = expectedPercentile;
 	}
 
-	public BigDecimal getExpectedSlaValue() {
+	public Double getExpectedSlaValue() {
 		return expectedSlaValue;
 	}
 
-	public void setExpectedSlaValue(BigDecimal expectedSlaValue) {
+	public void setExpectedSlaValue(Double expectedSlaValue) {
 		this.expectedSlaValue = expectedSlaValue;
 	}
 
-	public BigDecimal getActualPercentile() {
-		
-		NormalDistribution normalDistribution = new NormalDistribution(this.avg.doubleValue(),Math.sqrt(this.stdev.doubleValue()));
-		actualPercentile = new BigDecimal(normalDistribution.cumulativeProbability(expectedSlaValue.doubleValue()));
-		actualPercentile = actualPercentile.multiply(BigDecimal.valueOf(100));
+	public Double getActualPercentile() {
+
+		NormalDistribution normalDistribution = new NormalDistribution(this.avg,Math.sqrt(this.stdev));
+		actualPercentile = normalDistribution.cumulativeProbability(expectedSlaValue);
+		actualPercentile = actualPercentile * 100D;
 		return actualPercentile;
 	}
 
-	public void setActualPercentile(BigDecimal actualPercentile) {
-		
+
+	public void setActualPercentile(Double actualPercentile) {
+
 		this.actualPercentile = actualPercentile;
 	}
 
-	public BigDecimal getActualSlaValue() {
-		NormalDistribution normalDistribution = new NormalDistribution(this.avg.doubleValue(),Math.sqrt(this.stdev.doubleValue()));
-		actualSlaValue = new BigDecimal(normalDistribution.inverseCumulativeProbability(expectedPercentile.divide(BigDecimal.valueOf(100)).doubleValue()));
+	public Double getActualSlaValue() {
+		NormalDistribution normalDistribution = new NormalDistribution(this.avg,Math.sqrt(this.stdev));
+		actualSlaValue = normalDistribution.inverseCumulativeProbability(expectedPercentile * 0.01D);
 		return actualSlaValue;
 	}
 
-	public void setActualSlaValue(BigDecimal actualSlaValue) {
+	public void setActualSlaValue(Double actualSlaValue) {
 		this.actualSlaValue = actualSlaValue;
 	}
 
-	public Map<BigDecimal, Integer> getFrequencyData() {
+	public TreeMap<Integer, Integer> getFrequencyData() {
 		return frequencyData;
 	}
 
-	public BigDecimal getMin() {
+	public Double getMin() {
 		return min;
 	}
 
-	public void setMin(BigDecimal min) {
+	public void setMin(Double min) {
 		this.min = min;
 	}
 
-	public BigDecimal getMax() {
+	public Double getMax() {
 		return max;
 	}
-
-	public void setMax(BigDecimal max) {
+	public void setMax(Double max) {
 		this.max = max;
 	}
 
-	public void setFrequencyData(Map<BigDecimal, Integer> frequencyData) {
+	public void setFrequencyData(TreeMap<Integer, Integer> frequencyData) {
 		this.frequencyData = frequencyData;
 	}
-
 	public String getKey() {
 		return key;
 	}
 	public void setKey(String key) {
 		this.key = key;
 	}
+
 	public Integer getCount() {
 		return count;
 	}
 	public void setCount(Integer count) {
 		this.count = count;
 	}
-	public BigDecimal getAvg() {
+
+	public Double getAvg() {
 		return avg;
 	}
-	public void setAvg(BigDecimal avg) {
+
+
+	public void setAvg(Double avg) {
 		this.avg = avg;
 	}
-	public BigDecimal getStdev() {
+
+	public Double getStdev() {
 		return stdev;
 	}
-	public void setStdev(BigDecimal stdev) {
+	public void setStdev(Double stdev) {
 		this.stdev = stdev;
 	}
 
 	public void update(IndicatorRecord indicatorRecord){
 
-		
-		//calculate average & standard deviation
-		BigDecimal newAvg;
-		BigDecimal newStdev = new BigDecimal(0);
+
+		Double newAvg;
+		Double newTotalSum;
+		Double newmn;
+		Double newsn;
+		Double newStdev = 0.0;
 		Integer newCount = this.count + 1;
-		BigDecimal bigDecimalcount = new BigDecimal(this.count);
-		BigDecimal bigDecimalNewCount = new BigDecimal(newCount);
-		
-		//calculate average		
+
+		//count = 0, n (newCount)=1
 		if (this.count == 0) {
-			newAvg=indicatorRecord.getIndicatorValue();
+			newmn = indicatorRecord.getIndicatorValue();
+			newsn = 0D;
+			newTotalSum = indicatorRecord.getIndicatorValue();
+			newAvg = indicatorRecord.getIndicatorValue();
+			newStdev = 0D;
 			this.min = indicatorRecord.getIndicatorValue();
 			this.max = indicatorRecord.getIndicatorValue();
-		}else{
-			newAvg = ((this.avg.multiply(bigDecimalcount)).add(indicatorRecord.getIndicatorValue())).divide(bigDecimalNewCount,MathContext.DECIMAL64);
+		} else{ //count >= 1 , n (newCount)=>2
+
+			//calculate new average
+			newTotalSum = this.totalSum + indicatorRecord.getIndicatorValue();
+			newAvg = (newTotalSum)/newCount.doubleValue();
+
+			//calculate sums for standard dev
+			newmn = this.mn + (indicatorRecord.getIndicatorValue()-this.mn)/newCount.doubleValue();
+			newsn = this.sn + (indicatorRecord.getIndicatorValue()-this.mn)*(indicatorRecord.getIndicatorValue()-newmn);
+			newStdev = Math.sqrt(newsn/(this.count));
 		}
-		// calculate standard deviation		
-		if (this.count >= 1) {
-//			newStdev = bigDecimalNewCount.subtract(BigDecimal.valueOf(2)).divide
-//					(
-//							bigDecimalNewCount.subtract(BigDecimal.valueOf(1))
-//							,MathContext.DECIMAL64).multiply(this.stdev);
-//			newStdev = newStdev.add(indicatorRecord.getValue().subtract(this.avg).pow(2)).divide(bigDecimalNewCount,MathContext.DECIMAL64);
-			
-			BigDecimal n_minus_2 = bigDecimalNewCount.subtract(BigDecimal.valueOf(2));
-			BigDecimal n_minus_2_sn1 = n_minus_2.multiply(this.stdev);
-			BigDecimal n_minus_1 =  bigDecimalNewCount.subtract(BigDecimal.valueOf(1));
-			BigDecimal xn1_minus_xn_square = this.avg.subtract(newAvg).pow(2);
-			BigDecimal xn_minus_xn_square = indicatorRecord.getIndicatorValue().subtract(newAvg).pow(2);
-			
-			newStdev = n_minus_2_sn1.add(n_minus_1.multiply(xn1_minus_xn_square)).add(xn_minus_xn_square).divide(n_minus_1,MathContext.DECIMAL64);
-			
-			
-		}
-		
-		
+
+
 		//calculate min/max
-		if (this.max.compareTo(indicatorRecord.getIndicatorValue()) < 0 ){
+		if (this.max < indicatorRecord.getIndicatorValue()){
 			this.max = indicatorRecord.getIndicatorValue();
 		}
-		if (this.min.compareTo(indicatorRecord.getIndicatorValue()) > 0 ){
+		if (this.min > indicatorRecord.getIndicatorValue()){
 			this.min = indicatorRecord.getIndicatorValue();
 		}
-		
+		//updating indicators
 		this.count = newCount;
+		this.totalSum = newTotalSum;
+		this.mn = newmn;
+		this.sn = newsn;
 		this.avg = newAvg;
 		this.stdev = newStdev;
 
 		//calculate percentiles and slas
-		
+
 		//calculate frequency chart
 		Integer currentFrequency = frequencyData.get(indicatorRecord.getFrequencyGroupValue());
 		if (currentFrequency!=null){
