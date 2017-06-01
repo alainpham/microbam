@@ -1,201 +1,179 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd        http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd">
-
-
-	<!-- ########################################################### -->
-	<!-- Embedded A-MQ instance -->
-	<!-- ########################################################### -->
-	<bean class="org.apache.activemq.broker.BrokerService"
-		destroy-method="stop" id="broker-svc" init-method="start">
-		<property name="transportConnectorURIs">
-			<list>
-				<value>tcp://0.0.0.0:61670</value>
-			</list>
-		</property>
-		<property name="persistent" value="false" />
-		<property name="useJmx" value="true" />
-		<property name="brokerId" value="eventbrk" />
-		<property name="brokerName" value="eventbrk" />
-	</bean>
-
-
-	<bean class="org.apache.activemq.ActiveMQConnectionFactory" id="jmsConnectionFactory">
-		<property name="brokerURL" value="failover:(tcp://localhost:61670)" />
-		<property name="userName" value="admin" />
-		<property name="password" value="admin" />
-	</bean>
-
-	<bean class="org.apache.activemq.pool.PooledConnectionFactory"
-		destroy-method="stop" id="pooledConnectionFactory" init-method="start"
-		primary="true">
-		<property name="maxConnections" value="4" />
-		<property name="connectionFactory" ref="jmsConnectionFactory" />
-	</bean>
-
-	<bean class="org.apache.camel.component.jms.JmsConfiguration" id="jmsConfig">
-		<property name="connectionFactory" ref="pooledConnectionFactory" />
-		<property name="concurrentConsumers" value="4" />
-	</bean>
-
-	<bean class="org.apache.activemq.camel.component.ActiveMQComponent"
-		id="activemq">
-		<property name="configuration" ref="jmsConfig" />
-	</bean>
-
-	<!-- ########################################################### -->
-	<!-- Definition of embedded cache Manager -->
-	<!-- ########################################################### -->
-	<bean class="org.infinispan.manager.DefaultCacheManager"
-		destroy-method="stop" id="cacheManager" init-method="start">
-		<constructor-arg type="java.lang.String" value="jdg.xml" />
-	</bean>
-
-	<bean class="com.redhat.empowered.generic.model.GenericObjectFactory"
-		id="genericObjectFactory" />
-		
-	<bean
-		class="com.redhat.empowered.generic.processors.TriggerMetricCalculation"
-		id="triggerMetricCalculation">
-		<constructor-arg ref="cacheManager" />
-		<constructor-arg value="metric" />
-		<constructor-arg ref="genericObjectFactory" />
-	</bean>
-
-	<camelContext id="camel" xmlns="http://camel.apache.org/schema/spring">
-		<endpoint id="datagrid" uri="infinispan://?cacheContainer=#cacheManager" />
-		<restConfiguration bindingMode="json" component="servlet" />
-		<rest id="svc" path="/">
-			<get id="serverTimeOp" uri="serverTime">
-				<to uri="direct:serverTimeOp" />
-			</get>
-			<get id="clearCacheOp" uri="clearCache/{cacheName}">
-				<to uri="direct:clearCacheOp" />
-			</get>
-			<get id="queryOp" uri="{cacheName}/{uid}">
-				<to uri="direct:queryOp" />
-			</get>
-		</rest>
-		<rest bindingMode="off" id="dbSvc" path="/indicatorrecords">
-			<get id="indicatorRecordList" uri="/{indicatorClass}">
-				<description>List indicatorRecords</description>
-				<to uri="direct:indicatorRecordList" />
-			</get>
-		</rest>
-		
-		
-		
-		<route id="indicatorRecordListRoute">
-			<description>List indicatorRecords</description>
-			<from id="indicatorRecordListStarter" uri="direct:indicatorRecordList" />
-			<log id="_log1" message="${headers}" />
-			<setHeader headerName="CamelInfinispanKey" id="_setHeader1">
-				<simple>${header.indicatorClass}</simple>
-			</setHeader>
-			<setHeader headerName="CamelInfinispanCacheName" id="_setHeader2">
-				<simple>endpoint</simple>
-			</setHeader>
-			<setHeader headerName="CamelInfinispanOperation" id="_setHeader3">
-				<constant>CamelInfinispanOperationGet</constant>
-			</setHeader>
-			<removeHeader headerName="CamelHttpQuery" id="_removeHeader1" />
-			<removeHeader headerName="CamelHttpRawQuery" id="_removeHeader2" />
-			<to id="_to1" uri="ref:datagrid" />
-			<toD id="_toD1" pattern="InOut"
-				uri="${header.CamelInfinispanOperationResult}" />
-		</route>
-		<route id="serverTime">
-			<description>Serve time for the UI</description>
-			<from id="serverTimeStarter" uri="direct:serverTimeOp" />
-			<setBody id="setTimeToBody">
-				<simple>${date:now:yyyyMMddHHmmss.SSS}</simple>
-			</setBody>
-		</route>
-		<route id="clearCacheRoute">
-			<description>Clearing a cache</description>
-			<from id="clearCacheStarter" uri="direct:clearCacheOp" />
-			<setHeader headerName="CamelInfinispanCacheName"
-				id="clearCacheSetCamelInfinispanCacheName">
-				<simple>${headers.cacheName}</simple>
-			</setHeader>
-			<setHeader headerName="CamelInfinispanOperation"
-				id="clearCacheSetCamelInfinispanOperation">
-				<constant>CamelInfinispanOperationClear</constant>
-			</setHeader>
-			<to id="clearCacheRouteToDataGrid" uri="ref:datagrid" />
-			<setBody id="clearCacheRouteSetResponse">
-				<simple>${headers.cacheName} cleared!</simple>
-			</setBody>
-		</route>
-		
-		
-		<!-- rest service to query any cache -->
-		<route id="queryOpRoute">
-			<from id="queryOpStarter" uri="direct:queryOp" />
-			<setHeader headerName="CamelInfinispanKey" id="queryOpRouteSetKey">
-				<simple>${headers.uid}</simple>
-			</setHeader>
-			<setHeader headerName="CamelInfinispanCacheName" id="queryOpRouteSetCacheName">
-				<simple>${headers.cacheName}</simple>
-			</setHeader>
-			<setHeader headerName="CamelInfinispanOperation" id="queryOpRouteSetOperation">
-				<constant>CamelInfinispanOperationGet</constant>
-			</setHeader>
-			<to id="queryOpRouteToDataGrid" uri="ref:datagrid" />
-			<setBody id="queryOpRouteSetResponse">
-				<simple>${header.CamelInfinispanOperationResult}</simple>
-			</setBody>
-		</route>
-		
-		
-		<!-- calculating metrics -->
-		<route id="calculateMetrics">
-			<from id="calculateMetricsStarter"
-				uri="activemq:queue:app.stats.updatestats?acknowledgementModeName=CLIENT_ACKNOWLEDGE" />
-			<setHeader headerName="indicatorRecordAsBytes">
-				<simple>${body}</simple>
-			</setHeader>
-			<unmarshal id="umForMetricsCalc">
-				<serialization />
-			</unmarshal>
-			<log id="calculateMetricsLogObjectClass"
-				message="trying to process pojo of type ${body.class} - ${body.indicatorValue}" />
-			<setHeader headerName="eventTimestmp" id="setEventTimestamp">
-				<simple>${body.timestmp}</simple>
-			</setHeader>
-			<setHeader headerName="key" id="setMetricsKeyHourly">
-				<simple>${body.indicatorClass}.hourly.${date:header.eventTimestmp:yyyyMMddHH}</simple>
-			</setHeader>
-			<process id="processTriggerMetricCalculationHourly" ref="triggerMetricCalculation" />
-			<setHeader headerName="key" id="setMetricsKeyDaily">
-				<simple>${body.indicatorClass}.daily.${date:header.eventTimestmp:yyyyMMdd}</simple>
-			</setHeader>
-			<process id="processTriggerMetricCalculationDaily" ref="triggerMetricCalculation" />
-			<setHeader headerName="key" id="setMetricsKeyMonthly">
-				<simple>${body.indicatorClass}.monthly.${date:header.eventTimestmp:yyyyMM}</simple>
-			</setHeader>
-			<process id="processTriggerMetricCalculationMonthly" ref="triggerMetricCalculation" />
-		</route>
-		
-		
-		<route id="updateEndPoint">
-			<from id="updateEndPointStarter"
-				uri="activemq:topîc:app.ref.update.endpoint?acknowledgementModeName=CLIENT_ACKNOWLEDGE" />
-			<log id="_log2" message="updatingEndPoint : ${headers.endPointName} ${body}" />
-			<setHeader headerName="CamelInfinispanKey" id="_setHeader4">
-				<simple>${headers.endPointName}</simple>
-			</setHeader>
-			<setHeader headerName="CamelInfinispanOperation" id="_setHeader5">
-				<constant>CamelInfinispanOperationPut</constant>
-			</setHeader>
-			<setHeader headerName="CamelInfinispanCacheName" id="_setHeader6">
-				<constant>endpoint</constant>
-			</setHeader>
-			<setHeader headerName="CamelInfinispanValue" id="_setHeader7">
-				<simple>${body}</simple>
-			</setHeader>
-			<to id="_to2" uri="ref:datagrid" />
-		</route>
-	</camelContext>
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd        http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd">
+    <!-- ########################################################### -->
+    <!-- Embedded A-MQ instance -->
+    <!-- ########################################################### -->
+    <bean class="org.apache.activemq.broker.BrokerService"
+        destroy-method="stop" id="broker-svc" init-method="start">
+        <property name="transportConnectorURIs">
+            <list>
+                <value>tcp://0.0.0.0:61670</value>
+            </list>
+        </property>
+        <property name="persistent" value="false"/>
+        <property name="useJmx" value="true"/>
+        <property name="brokerId" value="eventbrk"/>
+        <property name="brokerName" value="eventbrk"/>
+    </bean>
+    <bean class="org.apache.activemq.ActiveMQConnectionFactory" id="jmsConnectionFactory">
+        <property name="brokerURL" value="failover:(tcp://localhost:61616)"/>
+        <property name="userName" value="admin"/>
+        <property name="password" value="admin"/>
+    </bean>
+    <bean class="org.apache.activemq.pool.PooledConnectionFactory"
+        destroy-method="stop" id="pooledConnectionFactory"
+        init-method="start" primary="true">
+        <property name="maxConnections" value="4"/>
+        <property name="connectionFactory" ref="jmsConnectionFactory"/>
+    </bean>
+    <bean class="org.apache.camel.component.jms.JmsConfiguration" id="jmsConfig">
+        <property name="connectionFactory" ref="pooledConnectionFactory"/>
+        <property name="concurrentConsumers" value="4"/>
+    </bean>
+    <bean class="org.apache.activemq.camel.component.ActiveMQComponent" id="activemq">
+        <property name="configuration" ref="jmsConfig"/>
+    </bean>
+    <!-- ########################################################### -->
+    <!-- Definition of embedded cache Manager -->
+    <!-- ########################################################### -->
+    <bean class="org.infinispan.manager.DefaultCacheManager"
+        destroy-method="stop" id="cacheManager" init-method="start">
+        <constructor-arg type="java.lang.String" value="jdg.xml"/>
+    </bean>
+    <bean
+        class="com.redhat.empowered.generic.model.GenericObjectFactory" id="genericObjectFactory"/>
+    <bean
+        class="com.redhat.empowered.generic.processors.TriggerMetricCalculation" id="triggerMetricCalculation">
+        <constructor-arg ref="cacheManager"/>
+        <constructor-arg value="metric"/>
+        <constructor-arg ref="genericObjectFactory"/>
+    </bean>
+    <camelContext id="camel" xmlns="http://camel.apache.org/schema/spring">
+        <endpoint id="datagrid" uri="infinispan://?cacheContainer=#cacheManager"/>
+        <restConfiguration bindingMode="json" component="servlet"/>
+        <rest id="svc" path="/">
+            <get id="serverTimeOp" uri="serverTime">
+                <to uri="direct:serverTimeOp"/>
+            </get>
+            <get id="clearCacheOp" uri="clearCache/{cacheName}">
+                <to uri="direct:clearCacheOp"/>
+            </get>
+            <get id="queryOp" uri="{cacheName}/{uid}">
+                <to uri="direct:queryOp"/>
+            </get>
+        </rest>
+        <rest bindingMode="off" id="dbSvc" path="/indicatorrecords">
+            <get id="indicatorRecordList" uri="/{indicator}">
+                <description>List indicatorRecords</description>
+                <to uri="direct:indicatorRecordList"/>
+            </get>
+        </rest>
+        <route id="indicatorRecordListRoute" >
+            <description>List indicatorRecords</description>
+            <from id="indicatorRecordListStarter" uri="direct:indicatorRecordList" />
+       		<setExchangePattern pattern="InOut"/>
+            <log id="_log1" message="${headers}"/>
+<!--             <setHeader headerName="CamelInfinispanKey" id="_setHeader1">
+                <simple>${header.indicatorClass}</simple>
+            </setHeader>
+            <setHeader headerName="CamelInfinispanCacheName" id="_setHeader2">
+                <simple>endpoint</simple>
+            </setHeader>
+            <setHeader headerName="CamelInfinispanOperation" id="_setHeader3">
+                <constant>CamelInfinispanOperationGet</constant>
+            </setHeader>
+            <removeHeader headerName="CamelHttpQuery" id="_removeHeader1"/>
+            <removeHeader headerName="CamelHttpRawQuery" id="_removeHeader2"/>
+            <to id="_to1" uri="ref:datagrid"/>
+            <toD id="_toD1" pattern="InOut" uri="${header.CamelInfinispanOperationResult}"/> -->
+            <toD pattern="InOut" uri="activemq:queue:app.query.${header.indicator}?exchangePattern=InOut&amp;deliveryPersistent=false&amp;timeToLive=10000&amp;requestTimeout=10000&amp;replyToType=Temporary"></toD>
+        	<removeHeaders pattern="*"></removeHeaders>
+        	<setHeader headerName="Content-Type">
+        		<constant>application/json</constant>
+        	</setHeader>
+        	<log message="${body}"></log>
+        </route>
+        <route id="serverTime">
+            <description>Serve time for the UI</description>
+            <from id="serverTimeStarter" uri="direct:serverTimeOp"/>
+            <setBody id="setTimeToBody">
+                <simple>${date:now:yyyyMMddHHmmss.SSS}</simple>
+            </setBody>
+        </route>
+        <route id="clearCacheRoute">
+            <description>Clearing a cache</description>
+            <from id="clearCacheStarter" uri="direct:clearCacheOp"/>
+            <setHeader headerName="CamelInfinispanCacheName" id="clearCacheSetCamelInfinispanCacheName">
+                <simple>${headers.cacheName}</simple>
+            </setHeader>
+            <setHeader headerName="CamelInfinispanOperation" id="clearCacheSetCamelInfinispanOperation">
+                <constant>CamelInfinispanOperationClear</constant>
+            </setHeader>
+            <to id="clearCacheRouteToDataGrid" uri="ref:datagrid"/>
+            <setBody id="clearCacheRouteSetResponse">
+                <simple>${headers.cacheName} cleared!</simple>
+            </setBody>
+        </route>
+        <!-- rest service to query any cache -->
+        <route id="queryOpRoute">
+            <from id="queryOpStarter" uri="direct:queryOp"/>
+            <setHeader headerName="CamelInfinispanKey" id="queryOpRouteSetKey">
+                <simple>${headers.uid}</simple>
+            </setHeader>
+            <setHeader headerName="CamelInfinispanCacheName" id="queryOpRouteSetCacheName">
+                <simple>${headers.cacheName}</simple>
+            </setHeader>
+            <setHeader headerName="CamelInfinispanOperation" id="queryOpRouteSetOperation">
+                <constant>CamelInfinispanOperationGet</constant>
+            </setHeader>
+            <to id="queryOpRouteToDataGrid" uri="ref:datagrid"/>
+            <setBody id="queryOpRouteSetResponse">
+                <simple>${header.CamelInfinispanOperationResult}</simple>
+            </setBody>
+        </route>
+        <!-- calculating metrics -->
+        <route id="calculateMetrics">
+            <from id="calculateMetricsStarter" uri="activemq:queue:app.stats.updatestats?acknowledgementModeName=CLIENT_ACKNOWLEDGE"/>
+            <setHeader headerName="indicatorRecordAsBytes" id="_setHeader8">
+                <simple>${body}</simple>
+            </setHeader>
+            <unmarshal id="umForMetricsCalc">
+                <serialization/>
+            </unmarshal>
+            <log id="calculateMetricsLogObjectClass" message="trying to process pojo of type ${body.class} - ${body.indicatorValue}"/>
+            <setHeader headerName="eventTimestmp" id="setEventTimestamp">
+                <simple>${body.timestmp}</simple>
+            </setHeader>
+            <setHeader headerName="key" id="setMetricsKeyHourly">
+                <simple>${body.indicatorClass}.hourly.${date:header.eventTimestmp:yyyyMMddHH}</simple>
+            </setHeader>
+            <process id="processTriggerMetricCalculationHourly" ref="triggerMetricCalculation"/>
+            <setHeader headerName="key" id="setMetricsKeyDaily">
+                <simple>${body.indicatorClass}.daily.${date:header.eventTimestmp:yyyyMMdd}</simple>
+            </setHeader>
+            <process id="processTriggerMetricCalculationDaily" ref="triggerMetricCalculation"/>
+            <setHeader headerName="key" id="setMetricsKeyMonthly">
+                <simple>${body.indicatorClass}.monthly.${date:header.eventTimestmp:yyyyMM}</simple>
+            </setHeader>
+            <process id="processTriggerMetricCalculationMonthly" ref="triggerMetricCalculation"/>
+        </route>
+        <route id="updateEndPoint">
+            <from id="updateEndPointStarter" uri="activemq:topic:app.ref.update.endpoint?acknowledgementModeName=CLIENT_ACKNOWLEDGE"/>
+            <log id="_log2" message="updatingEndPoint : ${headers.endPointName} ${body}"/>
+            <setHeader headerName="CamelInfinispanKey" id="_setHeader4">
+                <simple>${headers.endPointName}</simple>
+            </setHeader>
+            <setHeader headerName="CamelInfinispanOperation" id="_setHeader5">
+                <constant>CamelInfinispanOperationPut</constant>
+            </setHeader>
+            <setHeader headerName="CamelInfinispanCacheName" id="_setHeader6">
+                <constant>endpoint</constant>
+            </setHeader>
+            <setHeader headerName="CamelInfinispanValue" id="_setHeader7">
+                <simple>${body}</simple>
+            </setHeader>
+            <to id="_to2" uri="ref:datagrid"/>
+        </route>
+    </camelContext>
 </beans>

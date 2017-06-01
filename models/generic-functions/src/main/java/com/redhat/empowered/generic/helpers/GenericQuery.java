@@ -41,27 +41,37 @@ public class GenericQuery implements InfinispanQueryBuilder {
 
 		QueryBuilder qb = queryFactory.from(type);
 
-		FilterConditionContext ctx=null;
 
+		// for each property of the class we look if a parameter has been set
+		
+		boolean first = true;
 		// for each property of the class we look if a parameter has been set		
 		for ( PropertyDescriptor pd : info.getPropertyDescriptors() ){
-
+			
 			Object searchValue = this.params.get(pd.getName());
-			logger.info("Trying with : " + pd.getName() );
 			//only search the fields that are actually indexed by checking the presence of Field annotation
+//			boolean propIsIndexed = c.getField(pd.getName()).getAnnotationsByType(Field.class).length > 0;
+			
+			//only add search criteria when the parameter has been set in the header and when the property is indexed	
+			
+			logger.info("pd.getName() : " + pd.getName());
 
-			//only add search criteria when the parameter has been set in the header and when the property is indexed			
+			logger.info("Search value : " + searchValue);
+			
 			if (searchValue!=null){
-				logger.info("Searchin with " + pd.getName() + "=" + searchValue);
+				
 				//if field is a date convert the type explicitly
 				if (pd.getPropertyType().equals(Date.class)){
 					searchValue = new Date(Long.parseLong((String)searchValue));
 				}
-
-				if (ctx==null){ 	//first condition
-					ctx = qb.having(pd.getName()).eq(searchValue);
+				
+				if (first){ 	//first condition
+					qb = qb.having(pd.getName()).eq(searchValue);
+					first=false;
+					logger.info("First");
 				}else{ 				//additional conditions with and operator
-					ctx.and().having(pd.getName()).eq(searchValue);
+					qb = ((FilterConditionContext) qb).and().having(pd.getName()).eq(searchValue);
+					logger.info("Not first");
 				}
 			}
 		}
