@@ -1,2 +1,2 @@
 #/bin/sh
-curl http://localhost:7124/sim/32/2
+curl http://localhost:8011/sim/32/2

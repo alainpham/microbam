@@ -21,8 +21,6 @@ public class DataGenerator extends Thread{
 		return producer;
 	}
 
-
-
 	public void setProducer(ProducerTemplate producer) {
 		this.producer = producer;
 	}

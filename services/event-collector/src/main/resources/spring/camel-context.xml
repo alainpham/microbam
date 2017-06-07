@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd        http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd">
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+    xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd        http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring-2.18.1.xsd">
     <!-- ########################################################### -->
     <!-- Embedded A-MQ instance -->
     <!-- ########################################################### -->
@@ -69,12 +70,9 @@
                 <to uri="direct:indicatorRecordList"/>
             </get>
         </rest>
-        <route id="indicatorRecordListRoute" >
+        <route id="indicatorRecordListRoute">
             <description>List indicatorRecords</description>
-            <from id="indicatorRecordListStarter" uri="direct:indicatorRecordList" />
-       		<setExchangePattern pattern="InOut"/>
-            <log id="_log1" message="${headers}"/>
-<!--             <setHeader headerName="CamelInfinispanKey" id="_setHeader1">
+            <!--             <setHeader headerName="CamelInfinispanKey" id="_setHeader1">
                 <simple>${header.indicatorClass}</simple>
             </setHeader>
             <setHeader headerName="CamelInfinispanCacheName" id="_setHeader2">
@@ -87,12 +85,15 @@
             <removeHeader headerName="CamelHttpRawQuery" id="_removeHeader2"/>
             <to id="_to1" uri="ref:datagrid"/>
             <toD id="_toD1" pattern="InOut" uri="${header.CamelInfinispanOperationResult}"/> -->
-            <toD pattern="InOut" uri="activemq:queue:app.query.${header.indicator}?exchangePattern=InOut&amp;deliveryPersistent=false&amp;timeToLive=10000&amp;requestTimeout=10000&amp;replyToType=Temporary"></toD>
-        	<removeHeaders pattern="*"></removeHeaders>
-        	<setHeader headerName="Content-Type">
-        		<constant>application/json</constant>
-        	</setHeader>
-        	<log message="${body}"></log>
+            <from id="indicatorRecordListStarter" uri="direct:indicatorRecordList"/>
+            <setExchangePattern id="_setExchangePattern1" pattern="InOut"/>
+            <log id="_log1" message="${headers}"/>
+            <toD id="_toD1" pattern="InOut" uri="activemq:queue:app.query.${header.indicator}?exchangePattern=InOut&amp;deliveryPersistent=false&amp;timeToLive=10000&amp;requestTimeout=10000&amp;replyToType=Temporary"/>
+            <removeHeaders id="_removeHeaders1" pattern="*"/>
+            <setHeader headerName="Content-Type" id="_setHeader1">
+                <constant>application/json</constant>
+            </setHeader>
+            <log id="_log3" message="${body}"/>
         </route>
         <route id="serverTime">
             <description>Serve time for the UI</description>
