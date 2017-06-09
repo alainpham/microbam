@@ -9,6 +9,12 @@ http://www.infinispan.org/schemas/infinispan-cachestore-leveldb-config-8.0.xsd"
 		<local-cache name="metric">
 			<transaction locking="PESSIMISTIC" mode="NON_XA" />
 			<eviction strategy="LRU" type="COUNT" size="200" />
+						<persistence >
+				<leveldb-store xmlns="urn:infinispan:config:store:leveldb:8.0"  
+					path="./target/ldb" shared="false" preload="true" >
+					<expiration path="./target/ldb-exp"></expiration>
+					</leveldb-store>
+			</persistence>
 		</local-cache>
 		<local-cache name="endpoint">
 			<persistence >
@@ -16,7 +22,6 @@ http://www.infinispan.org/schemas/infinispan-cachestore-leveldb-config-8.0.xsd"
 					path="./target/ldb" shared="false" preload="true" >
 					<expiration path="./target/ldb-exp"></expiration>
 					</leveldb-store>
-					
 			</persistence>
 		</local-cache>
 	</cache-container>

@@ -1,25 +1,18 @@
 /**
- * 
+ *
  */
 
 app.controller('metricsController',metricsController);
 
 
 
-function metricsController($rootScope,$scope,$interval,metrics,globalVars){
+function metricsController($rootScope,$scope,$interval,metrics,globalVars,bus){
 
 	//members declaration
 	this.dailySummaryBarChart = null;
 	this.intervalPromise = null;
 	this.data = null;
 
-	//utility function
-//	this.yyyymmdd = function(dateIn) {
-//		var yyyy = dateIn.getFullYear();
-//		var mm = dateIn.getMonth()+1; // getMonth() is zero-based
-//		var dd  = dateIn.getDate();
-//		return String(10000*yyyy + 100*mm + dd); // Leading zeros for mm and dd
-//	}
 
 	//init function
 	this.init = function(){
@@ -27,12 +20,15 @@ function metricsController($rootScope,$scope,$interval,metrics,globalVars){
 		dailySummaryBarChartConfig.bindto = '#dailySummaryBarChart';
 		dailySummaryBarChartConfig.data = {
 				type: 'bar',
-				onclick: function (d, i) { console.log("onclick", d, i); },
+				onclick: function (d, i) {
+					console.log("onclick", d, i);
+					bus.publishFrequencyGroupValue(d);
+				},
 				x: 'x',
 				columns: []
 		};
 		this.dailySummaryBarChart = c3.generate(dailySummaryBarChartConfig);
-		
+
 		//first update
 		this.update();
 
@@ -42,7 +38,7 @@ function metricsController($rootScope,$scope,$interval,metrics,globalVars){
 		}.bind(this), globalVars.updateIntervalMs);
 
 		//destroy interval
-		$scope.$on('$destroy', function () { 
+		$scope.$on('$destroy', function () {
 			console.log('desroying');
 			$interval.cancel(this.intervalPromise);
 		}.bind(this)
@@ -58,27 +54,27 @@ function metricsController($rootScope,$scope,$interval,metrics,globalVars){
 				'daily',
 				$rootScope.currentServerTime.substring(0,8),
 				function(data){
-					
+
 					if (data.data == ""){
 						return;
 					}
 
 					this.data=data.data;
 					this.updateDailySummaryBarChart();
-					
+
 				}.bind(this)
 		);
 	};
 
-	
+
 	this.updateDailySummaryBarChart = function(){
 
 		//color regions on graph
 		this.dailySummaryBarChart.regions([
 		               {
-		            	   axis: 'x', 
-		            	   end: this.data.expectedSlaValue, 
-		            	   class: 'sla-ok-region' 
+		            	   axis: 'x',
+		            	   end: this.data.expectedSlaValue,
+		            	   class: 'sla-ok-region'
 		               },
 		               {
 		            	   axis: 'x',
@@ -89,7 +85,7 @@ function metricsController($rootScope,$scope,$interval,metrics,globalVars){
 		);
 
 		var limitSlaXGrid = {
-				value: this.data.expectedSlaValue, 
+				value: this.data.expectedSlaValue,
 				text: 'Limit SLA',
 				class : 'limit-sla-grid',
 				position: 'middle'

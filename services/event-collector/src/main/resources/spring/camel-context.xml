@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
-    xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd        http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring-2.18.1.xsd">
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd        http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring-2.18.1.xsd">
     <!-- ########################################################### -->
     <!-- Embedded A-MQ instance -->
     <!-- ########################################################### -->
@@ -69,7 +68,22 @@
                 <description>List indicatorRecords</description>
                 <to uri="direct:indicatorRecordList"/>
             </get>
+            <get id="projection" uri="/projection/{indicator}">
+                <description>Do a count projection</description>
+                <to uri="direct:projection"/>
+            </get>
         </rest>
+        <route id="projectionRoute">
+            <description>Get The projections</description>
+            <from  uri="direct:projection"/>
+            <setExchangePattern  pattern="InOut"/>
+            <log  message="${headers}"/>
+            <toD  pattern="InOut" uri="activemq:queue:app.query.projection.${header.indicator}?exchangePattern=InOut&amp;deliveryPersistent=false&amp;replyToDeliveryPersistent=false&amp;timeToLive=10000&amp;requestTimeout=10000"/>
+            <removeHeaders  pattern="*"/>
+            <setHeader headerName="Content-Type">
+                <constant>application/json</constant>
+            </setHeader>
+        </route>
         <route id="indicatorRecordListRoute">
             <description>List indicatorRecords</description>
             <!--             <setHeader headerName="CamelInfinispanKey" id="_setHeader1">
@@ -88,12 +102,11 @@
             <from id="indicatorRecordListStarter" uri="direct:indicatorRecordList"/>
             <setExchangePattern id="_setExchangePattern1" pattern="InOut"/>
             <log id="_log1" message="${headers}"/>
-            <toD id="_toD1" pattern="InOut" uri="activemq:queue:app.query.${header.indicator}?exchangePattern=InOut&amp;deliveryPersistent=false&amp;timeToLive=10000&amp;requestTimeout=10000&amp;replyToType=Temporary"/>
+            <toD id="_toD1" pattern="InOut" uri="activemq:queue:app.query.${header.indicator}?exchangePattern=InOut&amp;deliveryPersistent=false&amp;replyToDeliveryPersistent=false&amp;timeToLive=10000&amp;requestTimeout=10000"/>
             <removeHeaders id="_removeHeaders1" pattern="*"/>
-            <setHeader headerName="Content-Type" id="_setHeader1">
+            <setHeader headerName="Content-Type" >
                 <constant>application/json</constant>
             </setHeader>
-            <log id="_log3" message="${body}"/>
         </route>
         <route id="serverTime">
             <description>Serve time for the UI</description>

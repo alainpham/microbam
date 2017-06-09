@@ -16,7 +16,7 @@ public class DataGenerator extends Thread{
 
 	@EndpointInject(uri="activemq:queue:app.stats.trades")
 	private ProducerTemplate producer;
-	
+
 	public ProducerTemplate getProducer() {
 		return producer;
 	}
@@ -26,22 +26,22 @@ public class DataGenerator extends Thread{
 	}
 
 	private RandomDataGenerator dataGenerator=  new RandomDataGenerator();
-	
+
 
 	private BigDecimal avg;
 	private BigDecimal stdev;
-	
-    private volatile boolean running = true;
 
-    private static DataGenerator generatorThread;
-    
-    public void terminate() {
-    	generatorThread.running = false;
-    	generatorThread = null;
-    }
-	
-    
-    
+	private volatile boolean running = true;
+
+	private static DataGenerator generatorThread;
+
+	public void terminate() {
+		generatorThread.running = false;
+		generatorThread = null;
+	}
+
+
+
 	public boolean isRunning() {
 		return running;
 	}
@@ -55,9 +55,9 @@ public class DataGenerator extends Thread{
 
 
 	public void readData(){
-		
+
 	}
-	
+
 	public BigDecimal getAvg() {
 		return avg;
 	}
@@ -73,7 +73,7 @@ public class DataGenerator extends Thread{
 	public void setStdev(BigDecimal stdev) {
 		this.stdev = stdev;
 	}
-	
+
 	public void startSim(String avg, String stdev){
 		if (generatorThread!=null){
 			System.out.println("Simulation already Running");
@@ -86,36 +86,45 @@ public class DataGenerator extends Thread{
 		generatorThread.stdev = new BigDecimal(stdev);
 		generatorThread.start();
 	}
-	
+
 	@Override
 	public void run() {
 		ObjectMapper mapper = new ObjectMapper();
 
-	       while (this.running) {
-	            try {
-	            	Double value = new Double(dataGenerator.nextGaussian(avg.doubleValue(), stdev.doubleValue()));
-	            	value = Math.abs(value);
-	            	TradeProcessingDuration tradeProcessingDuration = new TradeProcessingDuration();
-	            	tradeProcessingDuration.setUid("" + System.currentTimeMillis());
-	            	tradeProcessingDuration.setTimestmp(new Date());
-	            	tradeProcessingDuration.setIndicatorValue(value);
-	            	producer.sendBody(mapper.writeValueAsString(tradeProcessingDuration));
-	            	Thread.sleep(dataGenerator.nextLong(200, 1000));
-	            } catch (Exception e) {
-					e.printStackTrace();
-	            }
-	        }
+		while (this.running) {
+			try {
+				Double value = new Double(dataGenerator.nextGaussian(avg.doubleValue(), stdev.doubleValue()));
+				value = Math.abs(value);
+				TradeProcessingDuration tradeProcessingDuration = new TradeProcessingDuration();
+				Long ts = System.currentTimeMillis();
+				tradeProcessingDuration.setUid("" + System.currentTimeMillis());
+				Date currDate = new Date();
+				tradeProcessingDuration.setTimestmp(currDate);
+				tradeProcessingDuration.setIndicatorValue(value);
+				tradeProcessingDuration.setTradeDate(currDate);
+				if (ts % 2 == 0){
+					tradeProcessingDuration.setBroker("TOTO");
+				}
+				else{
+					tradeProcessingDuration.setBroker("TITI");
+				}
+				producer.sendBody(mapper.writeValueAsString(tradeProcessingDuration));
+				Thread.sleep(dataGenerator.nextLong(200, 1000));
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
 	}
-	
+
 	public String generateOne() throws JsonProcessingException{
 		ObjectMapper mapper = new ObjectMapper();
 
 		Double value = 10D; 
-    	TradeProcessingDuration tradeProcessingDuration = new TradeProcessingDuration();
-    	tradeProcessingDuration.setUid("" + System.currentTimeMillis());
-    	tradeProcessingDuration.setTimestmp(new Date());
-    	tradeProcessingDuration.setIndicatorValue(value);
-    	return mapper.writeValueAsString(tradeProcessingDuration);
+		TradeProcessingDuration tradeProcessingDuration = new TradeProcessingDuration();
+		tradeProcessingDuration.setUid("" + System.currentTimeMillis());
+		tradeProcessingDuration.setTimestmp(new Date());
+		tradeProcessingDuration.setIndicatorValue(value);
+		return mapper.writeValueAsString(tradeProcessingDuration);
 	}
 
 }

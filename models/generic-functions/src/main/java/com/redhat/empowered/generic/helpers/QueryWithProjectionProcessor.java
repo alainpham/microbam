@@ -7,10 +7,10 @@ import java.util.Date;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
-import org.hibernate.search.annotations.Field;
 import org.infinispan.Cache;
 import org.infinispan.manager.CacheContainer;
 import org.infinispan.query.Search;
+import org.infinispan.query.dsl.Expression;
 import org.infinispan.query.dsl.FilterConditionContext;
 import org.infinispan.query.dsl.Query;
 import org.infinispan.query.dsl.QueryBuilder;
@@ -19,9 +19,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-public class QueryProcessor implements Processor {
+public class QueryWithProjectionProcessor implements Processor {
 	
-	final static Logger logger = LoggerFactory.getLogger(QueryProcessor.class);
+	final static Logger logger = LoggerFactory.getLogger(QueryWithProjectionProcessor.class);
 	
 	//cache container to be injected with another spring bean	
 	private CacheContainer cacheContainer;
@@ -45,11 +45,15 @@ public class QueryProcessor implements Processor {
 		
 		//Verify if the requested type exists using java reflection
 		Class c  = Class.forName(ex.getIn().getHeader("__type",String.class));
+		
+		String groupBy = ex.getIn().getHeader("groupBy", String.class);
+		String select = ex.getIn().getHeader("select", String.class);
 
+		
 		QueryFactory queryFactory = Search.getQueryFactory(cache);
 
 		QueryBuilder qb = queryFactory.from(c);
-
+		qb = qb.select(Expression.property(groupBy),Expression.count(select)) ;
 
 		//inspect the searched class in order to get the fields that can be queried
 		BeanInfo info = Introspector.getBeanInfo( c,Object.class);
@@ -60,7 +64,7 @@ public class QueryProcessor implements Processor {
 			
 			Object searchValue = ex.getIn().getHeader(pd.getName());
 			//only search the fields that are actually indexed by checking the presence of Field annotation
-//			boolean propIsIndexed = c.getField(pd.getName()).getAnnotationsByType(Field.class).length > 0;
+			//boolean propIsIndexed = c.getField(pd.getName()).getAnnotationsByType(Field.class).length > 0;
 			
 			//only add search criteria when the parameter has been set in the header and when the property is indexed	
 			
@@ -71,6 +75,12 @@ public class QueryProcessor implements Processor {
 
 				logger.info("Search value : " + searchValue);
 				
+				//if field is a date convert the type explicitly
+				if (pd.getPropertyType().equals(Date.class)){
+					logger.info("It's a date");
+					searchValue = new Date(Long.parseLong((String)searchValue));
+					logger.info(searchValue.toString());
+				}
 				
 				if (first){ 	//first condition
 					qb = qb.having(pd.getName()).eq(searchValue);
@@ -82,7 +92,8 @@ public class QueryProcessor implements Processor {
 				}
 			}
 		}
-
+		qb = qb.groupBy(groupBy);
+		
 		Query q = qb.build();
 
 

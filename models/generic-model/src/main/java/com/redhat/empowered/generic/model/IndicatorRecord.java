@@ -4,10 +4,11 @@ import java.io.Serializable;
 import java.util.Date;
 
 import org.hibernate.search.annotations.Analyze;
+import org.hibernate.search.annotations.DateBridge;
 import org.hibernate.search.annotations.Field;
-import org.hibernate.search.annotations.Indexed;
+import org.hibernate.search.annotations.Resolution;
 
-@Indexed
+
 public class IndicatorRecord implements Serializable{
 
 	private static final long serialVersionUID = 1L;
@@ -17,6 +18,7 @@ public class IndicatorRecord implements Serializable{
 	protected Double indicatorValue;
 
 	@Field(analyze = Analyze.NO)
+	@DateBridge(resolution=Resolution.HOUR)
 	protected Date timestmp;
 
 	@Field(analyze = Analyze.NO)
@@ -38,7 +40,7 @@ public class IndicatorRecord implements Serializable{
 	public void setIndicatorValue(Double indicatorValue) {
 		this.indicatorValue = indicatorValue;
 	}
-
+	
 	public Date getTimestmp() {
 		return timestmp;
 	}

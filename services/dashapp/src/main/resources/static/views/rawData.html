@@ -87,10 +87,21 @@
 </div>
 
 <div class="row">
-	<div class="col-xs-8">
+	<div class="col-xs-12">
 		<div id="dailySummaryBarChart"></div>
 	</div>
-	<div class="col-xs-4">
+</div>
+<h2>Test</h2>
+
+<div class="row" ng-controller="drillDownController as drillDownController">
+	<div class="col-xs-6">
+		<div id="drillDownPieChart" ></div>
+		<pre>{{drillDownController.data | json}}</pre>
+	</div>
+</div>
+
+<div class="row">
+	<div class="col-xs-12">
 		<pre>{{metricsController.data | json}}</pre>
 	</div>
 </div>

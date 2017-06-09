@@ -3,8 +3,11 @@ package com.redhat.empowered.specific.model.trading;
 import java.util.Date;
 
 import org.hibernate.search.annotations.Analyze;
+import org.hibernate.search.annotations.DateBridge;
 import org.hibernate.search.annotations.Field;
 import org.hibernate.search.annotations.Indexed;
+import org.hibernate.search.annotations.Resolution;
+import org.hibernate.search.annotations.Store;
 
 import com.redhat.empowered.generic.model.IndicatorRecord;
 
@@ -16,16 +19,22 @@ public class TradeProcessingDuration extends IndicatorRecord {
 	//dimensions of the indicator
 	@Field(analyze=Analyze.NO)
 	private String tradeID;
-	@Field(analyze=Analyze.NO)
+	
+	@Field(store=Store.YES,analyze=Analyze.NO)
 	private String stock;
-	@Field(analyze=Analyze.NO)
+	
+	@Field(store=Store.YES,analyze=Analyze.NO)
 	private String stockExchange;
-	@Field(analyze=Analyze.NO)
+	
+	@Field(store=Store.YES,analyze=Analyze.NO)
 	private String broker;
-	@Field(analyze=Analyze.NO)
+	
+	@Field(store=Store.YES,analyze=Analyze.NO)
 	private String type;
-	@Field(analyze=Analyze.NO)
+	
+	@Field(store=Store.YES,analyze=Analyze.NO)
 	private String customer;
+	
 	@Field(analyze=Analyze.NO)
 	private Date tradeDate;
 	
@@ -81,12 +90,18 @@ public class TradeProcessingDuration extends IndicatorRecord {
 	//ovride to define gouping granularity
 	@Override
 	public Integer getFrequencyGroupValue() {
-		return new Long(Math.round(indicatorValue)).intValue();
+		return new Long(Math.round(this.getIndicatorValue())).intValue();
 	}
 	
 	@Override
 	public String getIndicatorClass() {
 		return TradeProcessingDuration.class.getSimpleName();
 	}
+	
+	@Override
+	public Date getTimestmp() {
+		return timestmp;
+	}
+	
 	
 }
