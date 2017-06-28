@@ -89,6 +89,10 @@ public class DataGenerator extends Thread{
 
 	@Override
 	public void run() {
+		
+		String stocks[] = {"Akor Corp","Air Himalaya","Aircar","Archen Michelor","AXI","BND Caribou"};
+		String customers[] = {"Sanda Cude","Estefana Claborn","Sylvie Paynter","Mariko Duffey","Alta Furlong","Magdalene Holcomb","Odette Bresnahan","Rosamond Tetreault","Sandra Bowker","Luanna Capasso"};
+		String brokers[]={"Franklin Bank","The Westwood Homestead Savings Bank","Culver Federal Savings and Loan Association","Columbia Savings","United Guaranty Federal Savings Bank"};
 		ObjectMapper mapper = new ObjectMapper();
 
 		while (this.running) {
@@ -102,12 +106,10 @@ public class DataGenerator extends Thread{
 				tradeProcessingDuration.setTimestmp(currDate);
 				tradeProcessingDuration.setIndicatorValue(value);
 				tradeProcessingDuration.setTradeDate(currDate);
-				if (ts % 2 == 0){
-					tradeProcessingDuration.setBroker("TOTO");
-				}
-				else{
-					tradeProcessingDuration.setBroker("TITI");
-				}
+				tradeProcessingDuration.setStock(stocks[dataGenerator.nextInt(0, stocks.length-1)]);
+				tradeProcessingDuration.setCustomer(customers[dataGenerator.nextInt(0, customers.length-1)]);
+				tradeProcessingDuration.setBroker(brokers[dataGenerator.nextInt(0, brokers.length-1)]);
+
 				producer.sendBody(mapper.writeValueAsString(tradeProcessingDuration));
 				Thread.sleep(dataGenerator.nextLong(200, 1000));
 			} catch (Exception e) {
