@@ -13,7 +13,6 @@ Hopefully, it will give you an idea of what real time monitoring with "the micro
 ##### event-collector
 
 Starts the following resources (note that these could have been externalized but to simplify the demo installation, it is embedded): 
-- Starts a h2 database to store individual events
 - Starts up a JBoss Data Grid to store and calculate statistics in realtime 
 
 What this module does : 
@@ -74,7 +73,7 @@ http://localhost:8888
 ```
 
 
-## Deploy on Openshift  : 
+## Deploy on Openshift (Moving to FIS2.0 ) : 
 1. go into folder openshift of this project
 ```
 cd openshift
@@ -107,7 +106,7 @@ http://dashboardURL/sim/sim/20/5
 
 
 
-## Install on Fuse Karaf : 
+## Install on Fuse Karaf (Not workings yet as of now) : 
 ```
 features:install camel-infinispan jdbc camel-sql camel-netty4-http camel-jackson camel-jsonpath
 osgi:install -s mvn:com.h2database/h2/1.4.193

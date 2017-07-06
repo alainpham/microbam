@@ -19,20 +19,23 @@ package com.redhat.empowered.specific;
 import org.apache.camel.component.servlet.CamelHttpTransportServlet;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ImportResource;
 import org.springframework.boot.web.servlet.ServletRegistrationBean;
 
 @SpringBootApplication
 // load regular Spring XML file from the classpath that contains the Camel XML DSL
-@ImportResource({"classpath:spring/camel-context.xml"})
+//@ImportResource({"classpath:spring/camel-context.xml"})
+//@ImportResource({"classpath:spring/beans-generic.xml"})
+@ImportResource({"classpath:spring/camel-context.xml","classpath:spring/beans-generic.xml"})
 public class TradeServiceApp {
 
     /**
      * A main method to start this application.
      */
     public static void main(String[] args) {
-        SpringApplication.run(TradeServiceApp.class, args);
+    	ApplicationContext applicationContext = new SpringApplication(TradeServiceApp.class).run(args);
     }
     
     @Bean

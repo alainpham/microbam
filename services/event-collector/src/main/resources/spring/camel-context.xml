@@ -75,12 +75,12 @@
         </rest>
         <route id="projectionRoute">
             <description>Get The projections</description>
-            <from  uri="direct:projection"/>
-            <setExchangePattern  pattern="InOut"/>
-            <log  message="${headers}"/>
-            <toD  pattern="InOut" uri="activemq:queue:app.query.projection.${header.indicator}?exchangePattern=InOut&amp;deliveryPersistent=false&amp;replyToDeliveryPersistent=false&amp;timeToLive=10000&amp;requestTimeout=10000"/>
-            <removeHeaders  pattern="*"/>
-            <setHeader headerName="Content-Type">
+            <from id="_from1" uri="direct:projection"/>
+            <setExchangePattern id="_setExchangePattern2" pattern="InOut"/>
+            <log id="_log3" message="${headers}"/>
+            <toD id="_toD2" pattern="InOut" uri="activemq:queue:app.query.projection.${header.indicator}?exchangePattern=InOut&amp;deliveryPersistent=false&amp;replyToDeliveryPersistent=false&amp;timeToLive=10000&amp;requestTimeout=10000"/>
+            <removeHeaders id="_removeHeaders2" pattern="*"/>
+            <setHeader headerName="Content-Type" id="_setHeader1">
                 <constant>application/json</constant>
             </setHeader>
         </route>
@@ -104,7 +104,7 @@
             <log id="_log1" message="${headers}"/>
             <toD id="_toD1" pattern="InOut" uri="activemq:queue:app.query.${header.indicator}?exchangePattern=InOut&amp;deliveryPersistent=false&amp;replyToDeliveryPersistent=false&amp;timeToLive=10000&amp;requestTimeout=10000"/>
             <removeHeaders id="_removeHeaders1" pattern="*"/>
-            <setHeader headerName="Content-Type" >
+            <setHeader headerName="Content-Type" id="_setHeader2">
                 <constant>application/json</constant>
             </setHeader>
         </route>

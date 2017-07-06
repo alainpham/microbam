@@ -3,57 +3,10 @@
 <beans xmlns="http://www.springframework.org/schema/beans"
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd        http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd">
-	<!-- ########################################################### -->
-	<!-- Embedded A-MQ connection -->
-	<!-- ########################################################### -->
-	<bean class="org.apache.activemq.ActiveMQConnectionFactory" id="jmsConnectionFactory">
-		<property name="brokerURL" value="failover:(tcp://localhost:61616)" />
-		<property name="userName" value="admin" />
-		<property name="password" value="admin" />
-	</bean>
-	<bean class="org.apache.activemq.pool.PooledConnectionFactory"
-		destroy-method="stop" id="pooledConnectionFactory" init-method="start"
-		primary="true">
-		<property name="maxConnections" value="4" />
-		<property name="connectionFactory" ref="jmsConnectionFactory" />
-	</bean>
-	<bean class="org.apache.camel.component.jms.JmsConfiguration" id="jmsConfig">
-		<property name="connectionFactory" ref="pooledConnectionFactory" />
-		<property name="concurrentConsumers" value="4" />
-	</bean>
-	<bean class="org.apache.activemq.camel.component.ActiveMQComponent"
-		id="activemq">
-		<property name="configuration" ref="jmsConfig" />
-	</bean>
-	<bean class="com.redhat.empowered.tester.DataGenerator" id="dataGenerator"
-		scope="singleton" />
-	<bean class="com.redhat.empowered.generic.model.GenericObjectFactory"
-		id="genericObjectFactory" />
-	<!-- ########################################################### -->
-	<!-- Definition of embedded cache Manager -->
-	<!-- ########################################################### -->
-	<bean class="org.infinispan.manager.DefaultCacheManager"
-		destroy-method="stop" id="cacheManager" init-method="start">
-		<constructor-arg type="java.lang.String" value="jdg.xml" />
-	</bean>
-	<bean class="com.redhat.empowered.generic.helpers.GenerateQuery"
-		id="generateQuery">
-		<property name="indicatorClass"
-			value="com.redhat.empowered.specific.model.trading.TradeProcessingDuration" />
-	</bean>
-	<!--<bean class="com.redhat.empowered.tester.QueryProcessor" id="queryProcessor"> -->
-	<!-- <bean class="com.redhat.empowered.generic.helpers.QueryProcessor" id="queryProcessor"> -->
-	<bean class="com.redhat.empowered.generic.helpers.QueryProcessor"
-		id="queryProcessor">
-		<property name="cacheContainer" ref="cacheManager" />
-	</bean>
-	<bean
-		class="com.redhat.empowered.generic.helpers.QueryWithProjectionProcessor"
-		id="queryWithProjectionProcessor">
-		<property name="cacheContainer" ref="cacheManager" />
-	</bean>
-	<camelContext id="trade-service" xmlns="http://camel.apache.org/schema/spring">
-		<endpoint id="datagrid" uri="infinispan://?cacheContainer=#cacheManager" />
+
+	<bean  class="com.redhat.empowered.tester.DataGenerator" id="dataGenerator"/>
+
+	<camelContext  id="trade-service" xmlns="http://camel.apache.org/schema/spring">
 		<restConfiguration bindingMode="json" component="servlet" />
 		<rest id="svc" path="/sim">
 			<get id="simOp" uri="{avg}/{stdev}">
@@ -65,16 +18,6 @@
 			<get id="testOn" uri="test">
 				<to uri="direct:testOp" />
 			</get>
-		</rest>
-		<rest path="/indicatorrecords">
-			<get uri="/TradeProcessingDuration">
-				<to uri="direct:queryRoute" />
-			</get>
-			<get uri="/projection/TradeProcessingDuration">
-				<to uri="direct:queryProjectionRoute" />
-			</get>
-			<!-- <get uri="/tradeProcessingDurationAlt"> <to uri="direct:queryRouteAlt" 
-				/> </get> -->
 		</rest>
 		<route id="testOpRoute">
 			<from id="_from1" uri="direct:testOp" />
@@ -100,113 +43,6 @@
 			<setBody id="_setBody2">
 				<simple>stopped</simple>
 			</setBody>
-		</route>
-		<!-- Specific process that parses and validates business data -->
-		<route id="receiveMetricsAMQJson">
-			<from id="receiveMetricsAMQJsonStarter" uri="activemq:queue:app.stats.trades" />
-			<log id="logBodyContent" message="metadata verifed ${body}" />
-			<unmarshal id="parseJson">
-				<json id="tradeProcessingDurationJson" library="Jackson"
-					unmarshalTypeName="com.redhat.empowered.specific.model.trading.TradeProcessingDuration" />
-			</unmarshal>
-			<inOnly id="toStoreIndicator" uri="direct:storeIndicator" />
-			<to id="call" uri="direct:receiveMetricsGeneric" />
-		</route>
-		<route id="receiveMetricsGeneric">
-			<from id="receiveMetricsGenericStarter" uri="direct:receiveMetricsGeneric" />
-			<setProperty id="_setProperty1" propertyName="originalBean">
-				<simple>${body}</simple>
-			</setProperty>
-			<setBody id="_setBody3">
-				<method method="createIndicatorRecord(${property.originalBean})"
-					ref="genericObjectFactory" />
-			</setBody>
-			<marshal id="_marshal1">
-				<serialization />
-			</marshal>
-			<to id="toUpdateStat" uri="activemq:queue:app.stats.updatestats" />
-		</route>
-		<!-- store the raw POJO -->
-		<route id="storeIndicatorRoute">
-			<from id="storeIndicatorStarter" uri="direct:storeIndicator" />
-			<setHeader headerName="eventTimestmp"
-				id="setEventTimestampForStoreIndicatorRoute">
-				<simple>${body.timestmp}</simple>
-			</setHeader>
-			<log id="logBody" message="trying to store pojo of type ${body.class} ${body.uid}" />
-			<setHeader headerName="CamelInfinispanKey" id="_setHeader1">
-				<simple>${body.uid}</simple>
-			</setHeader>
-			<setHeader headerName="CamelInfinispanCacheName" id="_setHeader2">
-				<constant>tradeProcessingDuration</constant>
-			</setHeader>
-			<setHeader headerName="CamelInfinispanOperation" id="_setHeader3">
-				<constant>CamelInfinispanOperationPut</constant>
-			</setHeader>
-			<setHeader headerName="CamelInfinispanValue" id="_setHeader4">
-				<simple>${body}</simple>
-			</setHeader>
-			<to id="_to1" uri="ref:datagrid" />
-		</route>
-		<!-- <route id="queryRouteAlt"> <from id="_from2" uri="direct:queryRouteAlt" 
-			/> <setHeader headerName="CamelInfinispanCacheName" id="queryOpRouteSetCacheName"> 
-			<constant>tradeProcessingDuration</constant> </setHeader> <setHeader headerName="CamelInfinispanOperation" 
-			id="queryOpRouteSetOperation"> <constant>CamelInfinispanOperationQuery</constant> 
-			</setHeader> <setHeader headerName="CamelInfinispanQueryBuilder" id="queryOpRouteSetBuilder"> 
-			<method method="getBuilder" ref="generateQuery" /> </setHeader> <to id="queryOpRouteToDataGrid" 
-			uri="ref:datagrid" /> <setBody id="queryOpRouteSetResponse"> <simple>${header.CamelInfinispanOperationResult}</simple> 
-			</setBody> </route> -->
-		<route id="queryRoute">
-			<from id="_from2" uri="direct:queryRoute" />
-			<log id="_log1" message="Query      headers : ${headers}" />
-			<setHeader headerName="__cacheName" >
-				<constant>tradeProcessingDuration</constant>
-			</setHeader>
-			<setHeader headerName="__type">
-				<constant> com.redhat.empowered.specific.model.trading.TradeProcessingDuration 
-				</constant>
-			</setHeader>
-			<process id="_process1" ref="queryProcessor" />
-		</route>
-		<route id="queryProjectionRoute">
-			<from uri="direct:queryProjectionRoute" />
-			<log message="Query      headers : ${headers}" />
-			<setHeader headerName="__cacheName" id="_setHeader6">
-				<constant>tradeProcessingDuration</constant>
-			</setHeader>
-			<setHeader headerName="__type">
-				<constant> com.redhat.empowered.specific.model.trading.TradeProcessingDuration 
-				</constant>
-			</setHeader>
-			<process ref="queryWithProjectionProcessor" />
-		</route>
-		<route id="queryRouteJms">
-			<from id="_from3"
-				uri="activemq:queue:app.query.TradeProcessingDuration?exchangePattern=InOut" />
-			<to id="_to3" pattern="InOut" uri="direct:queryRoute" />
-			<marshal>
-				<json library="Jackson" />
-			</marshal>
-			<convertBodyTo id="_convertBodyTo1" type="java.lang.String" />
-		</route>
-		<route id="queryWithProjectionRouteJms">
-			<from
-				uri="activemq:queue:app.query.projection.TradeProcessingDuration?exchangePattern=InOut" />
-			<to pattern="InOut" uri="direct:queryProjectionRoute" />
-			<marshal>
-				<json library="Jackson" />
-			</marshal>
-			<convertBodyTo type="java.lang.String" />
-		</route>
-		<route id="initEndPoint" startupOrder="1">
-			<from id="initEndPointStarter" uri="timer:initEndPoint?repeatCount=1&amp;delay=-1" />
-			<setHeader headerName="endPointName" id="_setHeader5">
-				<constant>tradeProcessingDuration</constant>
-			</setHeader>
-			<setBody id="_setBody6">
-				<constant>netty4-http:http://localhost:8011</constant>
-			</setBody>
-			<to id="_to2" uri="activemq:topic:app.ref.update.endpoint" />
 		</route>
 	</camelContext>
 </beans>

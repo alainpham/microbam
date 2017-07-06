@@ -66,10 +66,13 @@ function drillDownProjectionController($rootScope,$scope,$interval,projections,g
 
   this.updateChart = function(){
     console.log(this.data);
-    this.chart.unload();
+    // this.chart.unload();
+
     this.chart.load({
+      unload: true,
       columns: this.data
     });
+
   }
   this.init();
 };
