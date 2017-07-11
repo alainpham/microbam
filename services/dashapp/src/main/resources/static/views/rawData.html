@@ -1,123 +1,126 @@
-<div class="row">
-	<div class="col-xs-8"></div>
-	<div class="col-xs-4">Current Server Time : {{currentServerTime}}</div>
-</div>
-<div class="row">
-	<div class="card-pf card-pf-utilization">
-		<div class="card-pf-heading">
-			<h2 class="card-pf-title">SLA Overview</h2>
-		</div>
-		<div class="card-pf-body">
-			<div class="row">
-				<!-- Column 1 -->
-				<div class="col-xs-4">
-					<!-- <div pf-aggregate-status-card status="{{vm.status}}" show-top-border="true"></div> -->
-					<div class="card-pf card-pf-accented card-pf-aggregate-status">
-						<h3 class="card-pf-title">
-							<span class="fa  fa-clock-o fa-6"></span><strong>Order
-								Processing Time</strong>
-						</h3>
-						<p class="card-pf-utilization-details">Expected
-							{{metricsController.data.expectedPercentile.toFixed(1)}}% under
-							{{metricsController.data.expectedSlaValue.toFixed(1)}} min</p>
-						<p class="card-pf-aggregate-status-notifications">
-							<span class="card-pf-aggregate-status-notification"> <span
-								ng-class="(metricsController.data.actualSlaValue > metricsController.data.expectedSlaValue) ? 'pficon-error-circle-o' : 'pficon-ok'"></span>
-							</span>
-						</p>
-						<p class="card-pf-utilization-details">
-							Actual <strong>{{metricsController.data.actualPercentile.toFixed(1)}}%</strong>
-							under {{metricsController.data.expectedSlaValue.toFixed(1)}} min
-							expected
-						<p>
-						<p class="card-pf-utilization-details">
-							Actual {{metricsController.data.expectedPercentile.toFixed(1)}}%
-							under <strong>{{metricsController.data.actualSlaValue.toFixed(1)}}
-								min</strong> actual
-						</p>
-						<p class="card-pf-utilization-details">
-							{{metricsController.data.count}} have been processed</p>
+<div ng-controller="metricsController as metricsController">
+	<div class="row">
+		<div class="col-xs-8"></div>
+		<div class="col-xs-4">Current Server Time : {{currentServerTime}}</div>
+	</div>
+	<div class="row">
+		<div class="card-pf card-pf-utilization">
+			<div class="card-pf-heading">
+				<h2 class="card-pf-title">SLA Overview</h2>
+			</div>
+			<div class="card-pf-body">
+				<div class="row">
+					<!-- Column 1 -->
+					<div class="col-xs-4">
+						<!-- <div pf-aggregate-status-card status="{{vm.status}}" show-top-border="true"></div> -->
+						<div class="card-pf card-pf-accented card-pf-aggregate-status">
+							<h3 class="card-pf-title">
+								<span class="fa  fa-clock-o fa-6"></span><strong>Order
+									Processing Time</strong>
+							</h3>
+							<p class="card-pf-utilization-details">Expected
+								{{metricsController.data.expectedPercentile.toFixed(1)}}% under
+								{{metricsController.data.expectedSlaValue.toFixed(1)}} min</p>
+							<p class="card-pf-aggregate-status-notifications">
+								<span class="card-pf-aggregate-status-notification"> <span
+									ng-class="(metricsController.data.actualSlaValue > metricsController.data.expectedSlaValue) ? 'pficon-error-circle-o' : 'pficon-ok'"></span>
+								</span>
+							</p>
+							<p class="card-pf-utilization-details">
+								Actual <strong>{{metricsController.data.actualPercentile.toFixed(1)}}%</strong>
+								under {{metricsController.data.expectedSlaValue.toFixed(1)}} min
+								expected
+							<p>
+							<p class="card-pf-utilization-details">
+								Actual {{metricsController.data.expectedPercentile.toFixed(1)}}%
+								under <strong>{{metricsController.data.actualSlaValue.toFixed(1)}}
+									min</strong> actual
+							</p>
+							<p class="card-pf-utilization-details">
+								{{metricsController.data.count}} have been processed</p>
+						</div>
 					</div>
-				</div>
-				<!-- End Column 1 -->
+					<!-- End Column 1 -->
 
 
-				<!-- Column 2 -->
-				<div class="col-xs-4">
-					<!-- <div pf-aggregate-status-card status="{{vm.status}}" show-top-border="true"></div> -->
-					<div class="card-pf card-pf-accented card-pf-aggregate-status">
-						<h3 class="card-pf-title">
-							<span class="fa  fa-bug fa-6"></span><strong>Incident
-								Resolution Time</strong>
-						</h3>
-						<p class="card-pf-utilization-details">Expected 99% under 2
-							min</p>
-						<p class="card-pf-aggregate-status-notifications">
-							<span class="card-pf-aggregate-status-notification"><span
-								class="pficon-ok"></span></span>
-						</p>
-						<p class="card-pf-utilization-details">Actual 99% under 1 min</p>
-						<p class="card-pf-utilization-details">Actual 99.9% under 2
-							min</p>
-
+					<!-- Column 2 -->
+					<div class="col-xs-4">
+						<!-- <div pf-aggregate-status-card status="{{vm.status}}" show-top-border="true"></div> -->
+						<div class="card-pf card-pf-accented card-pf-aggregate-status">
+							<h3 class="card-pf-title">
+								<span class="fa  fa-bug fa-6"></span><strong>Incident
+									Resolution Time</strong>
+							</h3>
+							<p class="card-pf-utilization-details">Expected 99% under 2
+								min</p>
+							<p class="card-pf-aggregate-status-notifications">
+								<span class="card-pf-aggregate-status-notification"><span
+									class="pficon-ok"></span></span>
+							</p>
+							<p class="card-pf-utilization-details">Actual 99% under 1 min</p>
+							<p class="card-pf-utilization-details">Actual 99.9% under 2
+								min</p>
+							<p class="card-pf-utilization-details">&nbsp;</p>
+						</div>
 					</div>
-				</div>
-				<!-- End Column 2 -->
+					<!-- End Column 2 -->
 
-				<!-- Column 3 -->
-				<div class="col-xs-4">
-					<!-- <div pf-aggregate-status-card status="{{vm.status}}" show-top-border="true"></div> -->
-					<div class="card-pf card-pf-accented card-pf-aggregate-status">
-						<h3 class="card-pf-title">
-							<span class="pficon pficon-service"></span><strong>Service
-								Uptime</strong>
-						</h3>
-						<p class="card-pf-utilization-details">Expected 99.99%</p>
-						<p class="card-pf-aggregate-status-notifications">
-							<span class="card-pf-aggregate-status-notification"><span
-								class="pficon-ok"></span></span>
-						</p>
-						<p class="card-pf-utilization-details">Actual 99.999%</p>
+					<!-- Column 3 -->
+					<div class="col-xs-4">
+						<!-- <div pf-aggregate-status-card status="{{vm.status}}" show-top-border="true"></div> -->
+						<div class="card-pf card-pf-accented card-pf-aggregate-status">
+							<h3 class="card-pf-title">
+								<span class="pficon pficon-service"></span><strong>Service
+									Uptime</strong>
+							</h3>
+							<p class="card-pf-utilization-details">Expected 99.99%</p>
+							<p class="card-pf-aggregate-status-notifications">
+								<span class="card-pf-aggregate-status-notification"><span
+									class="pficon-ok"></span></span>
+							</p>
+							<p class="card-pf-utilization-details">Actual 99.999%</p>
+							<p class="card-pf-utilization-details">&nbsp;</p>
+							<p class="card-pf-utilization-details">&nbsp;</p>
+						</div>
 					</div>
+					<!-- End Column 3 -->
 				</div>
-				<!-- End Column 3 -->
 			</div>
 		</div>
 	</div>
-</div>
 
-<div class="row">
-	<div class="col-xs-12">
-		<div id="dailySummaryBarChart"></div>
+	<div class="row">
+		<div class="col-xs-12">
+			<div id="dailySummaryBarChart"></div>
+		</div>
 	</div>
+
+	<!-- <div class="row">
+		<div class="col-xs-12">
+			<pre>{{metricsController.data | json}}</pre>
+		</div>
+	</div> -->
 </div>
 
 <h2>Drill down</h2>
 
-<div class="row" >
-	<div ng-init="groupBy='broker' ; bindTo='#drillDownBrokerProjectionPieChart'">
-			<div class="col-xs-4"  ng-controller="drillDownProjectionController as drillDownProjectionController" >
-				<div id="drillDownBrokerProjectionPieChart" ></div>
-				<pre>{{drillDownProjectionController.data | json}}</pre>
-			</div>
-		</div>
-		 <div ng-init="groupBy='customer' ; bindTo='#drillDownCustomerProjectionPieChart'">
+	<div class="row" >
+		<div ng-init="groupBy='broker' ; bindTo='#drillDownBrokerProjectionPieChart'">
 				<div class="col-xs-4"  ng-controller="drillDownProjectionController as drillDownProjectionController" >
-					<div id="drillDownCustomerProjectionPieChart" ></div>
-					<pre>{{drillDownProjectionController.data | json}}</pre>
+					<div id="drillDownBrokerProjectionPieChart" ></div>
+					<!-- <pre>{{drillDownProjectionController.data | json}}</pre> -->
 				</div>
 			</div>
-			<div ng-init="groupBy='stock' ; bindTo='#drillDownStockProjectionPieChart'">
+			 <div ng-init="groupBy='customer' ; bindTo='#drillDownCustomerProjectionPieChart'">
 					<div class="col-xs-4"  ng-controller="drillDownProjectionController as drillDownProjectionController" >
-						<div id="drillDownStockProjectionPieChart" ></div>
-						<pre>{{drillDownProjectionController.data | json}}</pre>
+						<div id="drillDownCustomerProjectionPieChart" ></div>
+						<!-- <pre>{{drillDownProjectionController.data | json}}</pre> -->
 					</div>
 				</div>
-</div>
-
-
-<div class="row">
-	<div class="col-xs-12">
-		<pre>{{metricsController.data | json}}</pre>
+				<div ng-init="groupBy='stock' ; bindTo='#drillDownStockProjectionPieChart'">
+						<div class="col-xs-4"  ng-controller="drillDownProjectionController as drillDownProjectionController" >
+							<div id="drillDownStockProjectionPieChart" ></div>
+							<!-- <pre>{{drillDownProjectionController.data | json}}</pre> -->
+						</div>
+					</div>
 	</div>
-</div>

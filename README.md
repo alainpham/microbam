@@ -37,13 +37,6 @@ This is the dashboard that shows metrics in realtime and allows to analyze store
 
 Java classes that represent the generic model consumed by the event-collector to calculate statistics
 
-##### trade-model
-
-Example of model that extends the generic model to add business related data to the events.
-
-
-This is the dashboard that shows metrics in realtime and allows to analyze stored events
-
 
 ## To run the examples
 
@@ -57,7 +50,7 @@ mvn install
 ```
 3. open browser at 
 ```
-http://localhost:8888
+http://localhost:8012
 ```
 4. simulate events
 ```
@@ -73,7 +66,7 @@ http://localhost:8888
 ```
 
 
-## Deploy on Openshift (Moving to FIS2.0 ) : 
+## Deploy on Openshift (Moving to FIS2.0 - under construction... ) : 
 1. go into folder openshift of this project
 ```
 cd openshift
@@ -105,15 +98,3 @@ http://dashboardURL/sim/sim/20/5
 ![overview](https://raw.githubusercontent.com/alainpham/microbam/master/screenshot.png)
 
 
-
-## Install on Fuse Karaf (Not workings yet as of now) : 
-```
-features:install camel-infinispan jdbc camel-sql camel-netty4-http camel-jackson camel-jsonpath
-osgi:install -s mvn:com.h2database/h2/1.4.193
-osgi:install -s mvn:org.apache.commons/commons-math3/3.6.1
-osgi:install -s mvn:microbam/generic-model/CURRENT_VERSION
-osgi:install -s mvn:microbam/trade-model/CURRENT_VERSION
-osgi:install -s mvn:microbam/event-collector/CURRENT_VERSION
-osgi:install -s mvn:microbam/trade-service/CURRENT_VERSION
-osgi:install -s mvn:microbam/dashapp/CURRENT_VERSION
-```

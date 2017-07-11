@@ -27,7 +27,6 @@
 	<modules>
 		<module>generic-model</module>
 		<module>generic-functions</module>
-		<module>trade-model</module>
 	</modules>
 
 </project>

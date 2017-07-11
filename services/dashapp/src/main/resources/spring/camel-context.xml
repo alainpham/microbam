@@ -6,7 +6,7 @@
         <route id="backendBridgeRoute">
             <from id="backendBridgeStarter" uri="servlet:api?matchOnUriPrefix=true"/>
             <log id="_log1" message="${exchangeId} ${headers}"/>
-            <removeHeader headerName="CamelHttpQuery"/>
+            <removeHeader headerName="CamelHttpQuery" id="_removeHeader1"/>
             <to id="callBackend" uri="netty4-http:http://localhost:8010"/>
             <convertBodyTo id="_convertBodyTo1" type="java.lang.String"/>
             <log id="_log2" message="${body}"/>

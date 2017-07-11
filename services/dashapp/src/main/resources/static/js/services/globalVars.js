@@ -7,7 +7,7 @@ function globalVars(){
 
 	var service = {};
 
-	service.appTitle = 'Trade Orders SLA monitoring';
+	service.appTitle = 'Orders SLA monitoring';
 	service.businessObject = 'TradeProcessingDuration';
 	service.selectCountColumn = 'timestmp';
 	service.updateIntervalMs = 1500;
