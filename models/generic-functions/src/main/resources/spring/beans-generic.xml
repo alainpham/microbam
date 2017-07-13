@@ -7,9 +7,9 @@
 	<!-- Embedded A-MQ connection -->
 	<!-- ########################################################### -->
 	<bean class="org.apache.activemq.ActiveMQConnectionFactory" id="jmsConnectionFactory">
-		<property name="brokerURL" value="failover:(tcp://localhost:61616)" />
-		<property name="userName" value="admin" />
-		<property name="password" value="admin" />
+		<property name="brokerURL" value="${brokerUrl}" />
+		<property name="userName" value="${brokerUsr}" />
+		<property name="password" value="${brokerPwd}" />
 	</bean>
 	<bean class="org.apache.activemq.pool.PooledConnectionFactory"
 		destroy-method="stop" id="pooledConnectionFactory" init-method="start"

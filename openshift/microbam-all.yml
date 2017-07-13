@@ -1,0 +1,247 @@
+---
+apiVersion: v1
+kind: Template
+metadata:
+  annotations:
+    description: MICROBAM, Microservices Monitoring and SLA Management Solution
+    tags: microbam
+    iconClass: icon-jboss
+    version: '2.0'
+  name: microbam
+labels:
+  template: microbam
+parameters:
+- name: APP_NAME
+  displayName: Application Name
+  required: true
+  value: microbam
+- name: SOLUTION
+  displayName: Solution Name
+  required: true
+  value: microbam
+  description: The name assigned to the application.
+- name: GIT_REPO
+  displayName: Git Repository URL
+  required: true
+  value: https://github.com/alainpham/microbam.git
+  description: The URL of the repository with your application source code.
+- name: GIT_REF
+  displayName: Git Reference
+  value: master
+  description: Set this to a branch name, tag or other ref of your repository if you
+    are not using the default branch.
+- name: BUILDER_VERSION
+  displayName: Builder version
+  value: '2.0'
+  description: The version of the FIS S2I builder image to use.
+- name: APP_VERSION
+  displayName: Application Version
+  value: 1.2.0
+  description: The application version.
+- name: MAVEN_ARGS
+  displayName: Maven Arguments
+  value: package -DskipTests -Dfabric8.skip -e -B
+  description: Arguments passed to mvn in the build.
+- name: MAVEN_MIRROR_URL
+  displayName: Maven Mirror
+  value: http://172.17.0.1:8081/nexus/content/groups/public/
+- name: MAVEN_ARGS_APPEND
+  displayName: Extra Maven Arguments
+  description: Extra arguments passed to mvn, e.g. for multi-module builds.
+  value: -am -pl
+- name: ARTIFACT_DIR
+  displayName: Maven build directory
+  description: Directory of the artifact to be built, e.g. for multi-module builds.
+- name: MAVEN_OPTS
+  description: maven options such as heapspace
+  value: "-Xmx1024m"
+- name: IMAGE_STREAM_NAMESPACE
+  displayName: Image Stream Namespace
+  value: 'openshift'
+  required: false
+  description: Namespace in which the Fuse ImageStreams are installed. These ImageStreams
+    are normally installed in the openshift namespace. You should only need to modify
+    this if you've installed the ImageStreams in a different namespace/project.
+- name: BUILD_SECRET
+  displayName: Git Build Secret
+  generate: expression
+  description: The secret needed to trigger a build.
+  from: "[a-zA-Z0-9]{40}"
+objects:
+- kind: ImageStream
+  apiVersion: v1
+  metadata:
+    name: event-collector
+    creationTimestamp: 
+    labels:
+      component: event-collector
+      solution: ${SOLUTION}
+      version: "${APP_VERSION}"
+  spec: {}
+  status:
+    dockerImageRepository: ''
+- kind: BuildConfig
+  apiVersion: v1
+  metadata:
+    name: event-collector
+    creationTimestamp: 
+    labels:
+      component: event-collector
+      solution: ${SOLUTION}
+      version: "${APP_VERSION}"
+  spec:
+    triggers:
+    - type: GitHub
+      github:
+        secret: "${BUILD_SECRET}"
+    - type: Generic
+      generic:
+        secret: "${BUILD_SECRET}"
+    - type: ConfigChange
+    - type: ImageChange
+      imageChange: {}
+    source:
+      type: Git
+      git:
+        uri: "${GIT_REPO}"
+        ref: "${GIT_REF}"
+    strategy:
+      type: Source
+      sourceStrategy:
+        from:
+          kind: ImageStreamTag
+          namespace: "${IMAGE_STREAM_NAMESPACE}"
+          name: fis-java-openshift:${BUILDER_VERSION}
+        forcePull: true
+        incremental: true
+        env:
+        - name: BUILD_LOGLEVEL
+          value: '5'
+        - name: ARTIFACT_DIR
+          value: "${ARTIFACT_DIR}"
+        - name: MAVEN_ARGS
+          value: "${MAVEN_ARGS}"
+        - name: MAVEN_ARGS_APPEND
+          value: "${MAVEN_ARGS_APPEND} services/event-collector"
+        - name: MAVEN_OPTS
+          value: ${MAVEN_OPTS}
+        - name: MAVEN_MIRROR_URL
+          value: ${MAVEN_MIRROR_URL}
+    output:
+      to:
+        kind: ImageStreamTag
+        name: "${APP_NAME}:latest"
+    resources: {}
+  status:
+    lastVersion: 0
+- kind: DeploymentConfig
+  apiVersion: v1
+  metadata:
+    name: event-collector
+    creationTimestamp: 
+    labels:
+      component: event-collector
+      solution: ${SOLUTION}
+      version: "${APP_VERSION}"
+  spec:
+    strategy:
+      resources: {}
+    triggers:
+    - type: ConfigChange
+    - type: ImageChange
+      imageChangeParams:
+        automatic: true
+        containerNames:
+        - event-collector
+        from:
+          kind: ImageStreamTag
+          name: "event-collector:latest"
+    replicas: 1
+    selector:
+      component: event-collector
+      deploymentconfig: event-collector
+      solution: ${SOLUTION}
+      version: "${APP_VERSION}"
+    template:
+      metadata:
+        creationTimestamp: 
+        labels:
+          component: event-collector
+          solution: ${SOLUTION}
+          deploymentconfig: event-collector
+          version: "${APP_VERSION}"
+      spec:
+        containers:
+        - name: event-collector
+          image: library/event-collector:latest
+          volumeMounts:
+          - name: config-volume
+            mountPath: /deployments/config
+          readinessProbe:
+            httpGet:
+              path: "/health"
+              port: 8086
+            initialDelaySeconds: 10
+          livenessProbe:
+            httpGet:
+              path: "/health"
+              port: 8086
+            initialDelaySeconds: 180
+          ports:
+          - containerPort: 8080
+            name: svc
+          - containerPort: 8778
+            name: jolokia
+          env:
+          - name: KUBERNETES_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          resources: {}
+        volumes:
+        - name: config-volume
+          configMap:
+            name: event-collector-config
+  status: {}
+  
+- apiVersion: v1
+  kind: Service
+  metadata:
+    name: event-collector
+    creationTimestamp: 
+    labels:
+      component: event-collector
+      solution: ${SOLUTION}
+      version: "${APP_VERSION}"
+  spec:
+    ports:
+    - name: svc-tcp
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
+    selector:
+      component: event-collector
+      deploymentconfig: event-collector
+      solution: ${SOLUTION}
+      version: "${APP_VERSION}"
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+    
+- apiVersion: v1
+  kind: Route
+  metadata:
+    name: event-collector
+    creationTimestamp: 
+    labels:
+      component: event-collector
+      solution: ${SOLUTION}
+      version: "${APP_VERSION}"
+  spec:
+    to:
+      kind: Service
+      name: event-collector
+    port:
+      targetPort: svc-tcp
+  status: {}
