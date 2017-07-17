@@ -37,15 +37,14 @@
     <!-- ########################################################### -->
     <!-- Definition of embedded cache Manager -->
     <!-- ########################################################### -->
-	<bean class="com.redhat.empowered.generic.helpers.CacheManagerFactory" id="cacheManagerFactory">
-		<constructor-arg value="${persistenceFolder}" />
-		<constructor-arg value="${indexFolder}"/>
-	</bean>
-
-	<bean factory-bean="cacheManagerFactory" factory-method="newCacheManager"
-		id="cacheManager" destroy-method="stop" init-method="start"/>
     <bean
-    
+        class="com.redhat.empowered.generic.helpers.CacheManagerFactory" id="cacheManagerFactory">
+        <constructor-arg value="${persistenceFolder}"/>
+        <constructor-arg value="${indexFolder}"/>
+    </bean>
+    <bean destroy-method="stop" factory-bean="cacheManagerFactory"
+        factory-method="newCacheManager" id="cacheManager" init-method="start"/>
+    <bean
         class="com.redhat.empowered.generic.model.GenericObjectFactory" id="genericObjectFactory"/>
     <bean
         class="com.redhat.empowered.generic.processors.TriggerMetricCalculation" id="triggerMetricCalculation">
