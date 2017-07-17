@@ -112,13 +112,11 @@ objects:
           kind: ImageStreamTag
           namespace: "${IMAGE_STREAM_NAMESPACE}"
           name: fis-java-openshift:${BUILDER_VERSION}
-        forcePull: true
-        incremental: true
         env:
         - name: BUILD_LOGLEVEL
           value: '5'
         - name: ARTIFACT_DIR
-          value: "${ARTIFACT_DIR}"
+          value: services/event-collector/target/
         - name: MAVEN_ARGS
           value: "${MAVEN_ARGS}"
         - name: MAVEN_ARGS_APPEND
@@ -130,7 +128,7 @@ objects:
     output:
       to:
         kind: ImageStreamTag
-        name: "${APP_NAME}:latest"
+        name: "event-collector:${APP_VERSION}"
     resources: {}
   status:
     lastVersion: 0
@@ -155,7 +153,7 @@ objects:
         - event-collector
         from:
           kind: ImageStreamTag
-          name: "event-collector:latest"
+          name: "event-collector:${APP_VERSION}"
     replicas: 1
     selector:
       component: event-collector
@@ -173,7 +171,7 @@ objects:
       spec:
         containers:
         - name: event-collector
-          image: library/event-collector:latest
+          image: "library/event-collector:${APP_VERSION}"
           volumeMounts:
           - name: config-volume
             mountPath: /deployments/config
@@ -242,6 +240,358 @@ objects:
     to:
       kind: Service
       name: event-collector
+    port:
+      targetPort: svc-tcp
+  status: {}
+  
+- kind: ImageStream #trade-service
+  apiVersion: v1
+  metadata:
+    name: trade-service
+    creationTimestamp: 
+    labels:
+      component: trade-service
+      solution: ${SOLUTION}
+      version: "${APP_VERSION}"
+  spec: {}
+  status:
+    dockerImageRepository: ''
+- kind: BuildConfig
+  apiVersion: v1
+  metadata:
+    name: trade-service
+    creationTimestamp: 
+    labels:
+      component: trade-service
+      solution: ${SOLUTION}
+      version: "${APP_VERSION}"
+  spec:
+    triggers:
+    - type: GitHub
+      github:
+        secret: "${BUILD_SECRET}"
+    - type: Generic
+      generic:
+        secret: "${BUILD_SECRET}"
+    - type: ConfigChange
+    - type: ImageChange
+      imageChange: {}
+    source:
+      type: Git
+      git:
+        uri: "${GIT_REPO}"
+        ref: "${GIT_REF}"
+    strategy:
+      type: Source
+      sourceStrategy:
+        from:
+          kind: ImageStreamTag
+          namespace: "${IMAGE_STREAM_NAMESPACE}"
+          name: fis-java-openshift:${BUILDER_VERSION}
+        env:
+        - name: BUILD_LOGLEVEL
+          value: '5'
+        - name: ARTIFACT_DIR
+          value: services/trade-service/target/
+        - name: MAVEN_ARGS
+          value: "${MAVEN_ARGS}"
+        - name: MAVEN_ARGS_APPEND
+          value: "${MAVEN_ARGS_APPEND} services/trade-service"
+        - name: MAVEN_OPTS
+          value: ${MAVEN_OPTS}
+        - name: MAVEN_MIRROR_URL
+          value: ${MAVEN_MIRROR_URL}
+    output:
+      to:
+        kind: ImageStreamTag
+        name: "trade-service:${APP_VERSION}"
+    resources: {}
+  status:
+    lastVersion: 0
+- kind: DeploymentConfig
+  apiVersion: v1
+  metadata:
+    name: trade-service
+    creationTimestamp: 
+    labels:
+      component: trade-service
+      solution: ${SOLUTION}
+      version: "${APP_VERSION}"
+  spec:
+    strategy:
+      resources: {}
+    triggers:
+    - type: ConfigChange
+    - type: ImageChange
+      imageChangeParams:
+        automatic: true
+        containerNames:
+        - trade-service
+        from:
+          kind: ImageStreamTag
+          name: "trade-service:${APP_VERSION}"
+    replicas: 1
+    selector:
+      component: trade-service
+      deploymentconfig: trade-service
+      solution: ${SOLUTION}
+      version: "${APP_VERSION}"
+    template:
+      metadata:
+        creationTimestamp: 
+        labels:
+          component: trade-service
+          solution: ${SOLUTION}
+          deploymentconfig: trade-service
+          version: "${APP_VERSION}"
+      spec:
+        containers:
+        - name: trade-service
+          image: "library/trade-service:${APP_VERSION}"
+          volumeMounts:
+          - name: config-volume
+            mountPath: /deployments/config
+          readinessProbe:
+            httpGet:
+              path: "/health"
+              port: 8086
+            initialDelaySeconds: 10
+          livenessProbe:
+            httpGet:
+              path: "/health"
+              port: 8086
+            initialDelaySeconds: 180
+          ports:
+          - containerPort: 8080
+            name: svc
+          - containerPort: 8778
+            name: jolokia
+          env:
+          - name: KUBERNETES_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          resources: {}
+        volumes:
+        - name: config-volume
+          configMap:
+            name: trade-service-config
+  status: {}
+  
+- apiVersion: v1
+  kind: Service
+  metadata:
+    name: trade-service
+    creationTimestamp: 
+    labels:
+      component: trade-service
+      solution: ${SOLUTION}
+      version: "${APP_VERSION}"
+  spec:
+    ports:
+    - name: svc-tcp
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
+    selector:
+      component: trade-service
+      deploymentconfig: trade-service
+      solution: ${SOLUTION}
+      version: "${APP_VERSION}"
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+    
+- apiVersion: v1
+  kind: Route
+  metadata:
+    name: trade-service
+    creationTimestamp: 
+    labels:
+      component: trade-service
+      solution: ${SOLUTION}
+      version: "${APP_VERSION}"
+  spec:
+    to:
+      kind: Service
+      name: trade-service
+    port:
+      targetPort: svc-tcp
+  status: {}
+  
+- kind: ImageStream #dashapp
+  apiVersion: v1
+  metadata:
+    name: dashapp
+    creationTimestamp: 
+    labels:
+      component: dashapp
+      solution: ${SOLUTION}
+      version: "${APP_VERSION}"
+  spec: {}
+  status:
+    dockerImageRepository: ''
+- kind: BuildConfig
+  apiVersion: v1
+  metadata:
+    name: dashapp
+    creationTimestamp: 
+    labels:
+      component: dashapp
+      solution: ${SOLUTION}
+      version: "${APP_VERSION}"
+  spec:
+    triggers:
+    - type: GitHub
+      github:
+        secret: "${BUILD_SECRET}"
+    - type: Generic
+      generic:
+        secret: "${BUILD_SECRET}"
+    - type: ConfigChange
+    - type: ImageChange
+      imageChange: {}
+    source:
+      type: Git
+      git:
+        uri: "${GIT_REPO}"
+        ref: "${GIT_REF}"
+    strategy:
+      type: Source
+      sourceStrategy:
+        from:
+          kind: ImageStreamTag
+          namespace: "${IMAGE_STREAM_NAMESPACE}"
+          name: fis-java-openshift:${BUILDER_VERSION}
+        env:
+        - name: BUILD_LOGLEVEL
+          value: '5'
+        - name: ARTIFACT_DIR
+          value: services/dashapp/target/
+        - name: MAVEN_ARGS
+          value: "${MAVEN_ARGS}"
+        - name: MAVEN_ARGS_APPEND
+          value: "${MAVEN_ARGS_APPEND} services/dashapp"
+        - name: MAVEN_OPTS
+          value: ${MAVEN_OPTS}
+        - name: MAVEN_MIRROR_URL
+          value: ${MAVEN_MIRROR_URL}
+    output:
+      to:
+        kind: ImageStreamTag
+        name: "dashapp:${APP_VERSION}"
+    resources: {}
+  status:
+    lastVersion: 0
+- kind: DeploymentConfig
+  apiVersion: v1
+  metadata:
+    name: dashapp
+    creationTimestamp: 
+    labels:
+      component: dashapp
+      solution: ${SOLUTION}
+      version: "${APP_VERSION}"
+  spec:
+    strategy:
+      resources: {}
+    triggers:
+    - type: ConfigChange
+    - type: ImageChange
+      imageChangeParams:
+        automatic: true
+        containerNames:
+        - dashapp
+        from:
+          kind: ImageStreamTag
+          name: "dashapp:${APP_VERSION}"
+    replicas: 1
+    selector:
+      component: dashapp
+      deploymentconfig: dashapp
+      solution: ${SOLUTION}
+      version: "${APP_VERSION}"
+    template:
+      metadata:
+        creationTimestamp: 
+        labels:
+          component: dashapp
+          solution: ${SOLUTION}
+          deploymentconfig: dashapp
+          version: "${APP_VERSION}"
+      spec:
+        containers:
+        - name: dashapp
+          image: "library/dashapp:${APP_VERSION}"
+          volumeMounts:
+          - name: config-volume
+            mountPath: /deployments/config
+          readinessProbe:
+            httpGet:
+              path: "/health"
+              port: 8086
+            initialDelaySeconds: 10
+          livenessProbe:
+            httpGet:
+              path: "/health"
+              port: 8086
+            initialDelaySeconds: 180
+          ports:
+          - containerPort: 8080
+            name: svc
+          - containerPort: 8778
+            name: jolokia
+          env:
+          - name: KUBERNETES_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          resources: {}
+        volumes:
+        - name: config-volume
+          configMap:
+            name: dashapp-config
+  status: {}
+  
+- apiVersion: v1
+  kind: Service
+  metadata:
+    name: dashapp
+    creationTimestamp: 
+    labels:
+      component: dashapp
+      solution: ${SOLUTION}
+      version: "${APP_VERSION}"
+  spec:
+    ports:
+    - name: svc-tcp
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
+    selector:
+      component: dashapp
+      deploymentconfig: dashapp
+      solution: ${SOLUTION}
+      version: "${APP_VERSION}"
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+    
+- apiVersion: v1
+  kind: Route
+  metadata:
+    name: dashapp
+    creationTimestamp: 
+    labels:
+      component: dashapp
+      solution: ${SOLUTION}
+      version: "${APP_VERSION}"
+  spec:
+    to:
+      kind: Service
+      name: dashapp
     port:
       targetPort: svc-tcp
   status: {}

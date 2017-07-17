@@ -3,17 +3,17 @@ oc cluster up
 
 oc new-project best-project-ever
 
-oc create configmap --from-file=event-collector-application.properties event-collector-config
-oc create configmap --from-file=trade-service-application.properties trade-service-config
-oc create configmap --from-file=dashapp-application.properties dashapp-config
+oc create configmap --from-file=event-collector-config/application.properties event-collector-config
+oc create configmap --from-file=trade-service-config/application.properties trade-service-config
+oc create configmap --from-file=dashapp-config/application.properties dashapp-config
 
+oc create -f microbam-all.yml
+oc replace -f microbam-all.yml
 
-oc create -f solution.yaml
-oc replace -f sla-solution.yaml
-
-oc new-app sla-solution -p SOURCE_REPOSITORY=http://172.17.0.1:8086/r/jboss-middleware-empowered.git
-
-oc delete all -l solution=sla-solution
+oc new-app microbam -p GIT_REPO=http://192.168.42.1:8681/r/microbam.git
+oc new-app microbam -p GIT_REPO=http://172.17.0.1:8681/r/microbam.git
+oc new-app microbam -p GIT_REPO=http://172.17.0.1:8681/r/microbamback.git
+oc delete all -l solution=microbam
 
 
 

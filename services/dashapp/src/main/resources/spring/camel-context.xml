@@ -7,14 +7,14 @@
             <from id="backendBridgeStarter" uri="servlet:api?matchOnUriPrefix=true"/>
             <log id="_log1" message="${exchangeId} ${headers}"/>
             <removeHeader headerName="CamelHttpQuery" id="_removeHeader1"/>
-            <to id="callBackend" uri="netty4-http:http://localhost:8010"/>
+            <to id="callBackend" uri="{{apiendpoint}}"/>
             <convertBodyTo id="_convertBodyTo1" type="java.lang.String"/>
             <log id="_log2" message="${body}"/>
         </route>
         <route id="simulateBridgeRoute">
             <from id="simulateBridgeStarter" uri="servlet:sim?matchOnUriPrefix=true"/>
             <log id="_log3" message="${exchangeId} ${headers}"/>
-            <to id="callSimulate" uri="netty4-http:http://localhost:8011"/>
+            <to id="callSimulate" uri="{{simendpoint}}"/>
             <convertBodyTo id="_convertBodyTo2" type="java.lang.String"/>
             <log id="_log4" message="${body}"/>
         </route>
