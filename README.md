@@ -39,10 +39,10 @@ Java classes that represent the generic model consumed by the event-collector to
 
 
 ## To run the examples
-
-1. compile and package 
+1. compile and package and go to scripts folder
 ```
 mvn install
+cd scripts
 ```
 2. run apps with hawt-app packaging
 ```
@@ -60,23 +60,24 @@ http://localhost:8012
 ```
 ./pause.sh
 ```
-6. stop applications
+6. play events outside the SLA green zone
+```
+./eplay.sh
+```
+7. stop applications
 ```
 ./stopApp.sh
 ```
 
 
 ## Deploy on Openshift (Moving to FIS2.0) : 
-1. go into folder openshift of this project
-```
-cd openshift
-```
-2. create fis image streams if needed
+1. elements are in the folder openshift of this project
+
+2. create fis and amq image streams if needed
 ```
 oc login -u system:admin
 BASEURL=https://raw.githubusercontent.com/jboss-fuse/application-templates/GA
 oc create -n openshift -f ${BASEURL}/fis-image-streams.json
-oc create -f fis-image-streams.json
 
 JBASEURL=https://raw.githubusercontent.com/jboss-openshift/application-templates/master
 oc create -n openshift -f ${JBASEURL}/jboss-image-streams.json
