@@ -7,6 +7,11 @@ oc create configmap --from-file=event-collector-config/application.properties ev
 oc create configmap --from-file=trade-service-config/application.properties trade-service-config
 oc create configmap --from-file=dashapp-config/application.properties dashapp-config
 
+oc delete configmap event-collector-config
+oc delete configmap trade-service-config
+oc delete configmap dashapp-config
+
+
 oc create -f microbam-all.yml
 oc replace -f microbam-all.yml
 

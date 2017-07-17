@@ -66,30 +66,41 @@ http://localhost:8012
 ```
 
 
-## Deploy on Openshift (Moving to FIS2.0 - under construction... ) : 
+## Deploy on Openshift (Moving to FIS2.0) : 
 1. go into folder openshift of this project
 ```
 cd openshift
 ```
 2. create fis image streams if needed
 ```
+oc login -u system:admin
+BASEURL=https://raw.githubusercontent.com/jboss-fuse/application-templates/GA
+oc create -n openshift -f ${BASEURL}/fis-image-streams.json
 oc create -f fis-image-streams.json
-```
 
-3. create configMap to change app.properties
+JBASEURL=https://raw.githubusercontent.com/jboss-openshift/application-templates/master
+oc create -n openshift -f ${JBASEURL}/jboss-image-streams.json
+oc create -n openshift -f ${JBASEURL}/amq/amq63-basic.json
+oc create -n openshift -f ${JBASEURL}/amq/amq63-persistent.json
+oc create -n openshift -f ${JBASEURL}/amq/amq63-persistent-ssl.json
+oc create -n openshift -f ${JBASEURL}/amq/amq63-ssl.json
 ```
-oc create configmap --from-file=app.properties sla-solution-config
+3. create an AMQ instance
 ```
-4. create application template. 
+oc login -u developer
+oc new-app amq63-basic -p MQ_PROTOCOL=openwire -p MQ_USERNAME=admin -p MQ_PASSWORD=admin -p AMQ_MESH_DISCOVERY_TYPE=dns
 ```
-oc create -f sla-solution.yaml
+4. create configMap to change app.properties
 ```
-5. login to openshift and deploy the application template
-
-/!\ Change maven MAVEN_ARGS : for faster builds it is recommended that you setup a nexus2 locally to avoid downloading maven artifacts each time 
-change the value http://172.17.0.1:8081/nexus/content/groups/public/ to any local nexus instance that is configured to be mirror of central and fuse repositories
-Otherwise if you don't want to use this option change the maven settings.xml file in the root folder of this project.
-
+oc create configmap --from-file=openshift/event-collector-config/application.properties event-collector-config
+oc create configmap --from-file=openshift/trade-service-config/application.properties trade-service-config
+oc create configmap --from-file=openshift/dashapp-config/application.properties dashapp-config
+```
+5. create & deploy application template. 
+```
+oc create -f openshift/microbam-all.yml
+oc new-app microbam
+```
 6. to run the simulation simply acces the url 
 ```
 http://dashboardURL/sim/sim/20/5
