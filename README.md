@@ -8,7 +8,9 @@ Hopefully, it will give you an idea of what real time monitoring with "the micro
 
 ## Project descriptions
 
-![overview](https://raw.githubusercontent.com/alainpham/microbam/master/architectureSchema.png)
+![overview](https://raw.githubusercontent.com/alainpham/microbam/master/docs/architectureSchema.png)
+
+![overview](https://raw.githubusercontent.com/alainpham/microbam/master/docs/demo.gif)
 
 ##### event-collector
 
@@ -107,6 +109,6 @@ oc new-app microbam
 http://dashboardURL/sim/sim/20/5
 ```
 
-![overview](https://raw.githubusercontent.com/alainpham/microbam/master/screenshot.png)
+![overview](https://raw.githubusercontent.com/alainpham/microbam/master/docs/screenshot.png)
 
 
