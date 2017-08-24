@@ -41,44 +41,38 @@ Java classes that represent the generic model consumed by the event-collector to
 
 
 ## To run the examples
-
 1. compile and package and go to scripts folder
 ```
 mvn install
 cd scripts
 ```
-2. run an A-MQ instance
-```
-wget https://maven.repository.redhat.com/ga/org/apache/activemq/activemq-all/5.11.0.redhat-630224/activemq-all-5.11.0.redhat-630224.jar
-java -jar activemq-all-5.11.0.redhat-630224.jar start
-```
-3. run apps with hawt-app packaging
+2. run apps with hawt-app packaging
 ```
 ./runApp.sh
 ```
-4. open browser at 
+3. open browser at 
 ```
 http://localhost:8012
 ```
-5. simulate events
+4. simulate events
 ```
 ./play.sh
 ```
-6. stop events
+5. stop events
 ```
 ./pause.sh
 ```
-7. play events outside the SLA green zone
+6. play events outside the SLA green zone
 ```
 ./eplay.sh
 ```
-8. stop applications
+7. stop applications
 ```
 ./stopApp.sh
 ```
 
 
-## Deploy on Openshift (Using Fuse Integration Service 2.0) : 
+## Deploy on Openshift (Moving to FIS2.0) : 
 1. elements are in the folder openshift of this project
 
 2. create fis and amq image streams if needed
